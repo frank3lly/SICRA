@@ -1,0 +1,28 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C / ESP32 build artifacts
+.pio/
+build/
+*.bin
+*.elf
+*.hex
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Node / Web
+node_modules/
+dist/
+
+# OS / Editor specific files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
