@@ -1,0 +1,37 @@
+services:
+  # 1. Backend Web Service (FastAPI + ML Engine)
+  - type: web
+    name: sicra-api
+    env: docker
+    plan: free
+    region: ohio
+    dockerfilePath: Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DATABASE_URL
+        sync: false # User pastes their free Neon PostgreSQL connection string here
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: JWT_ALGORITHM
+        value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 1440
+      - key: AUTO_SEED_IF_EMPTY
+        value: "true"
+
+  # 2. Frontend Web Application (Dashboard & Map)
+  - type: static
+    name: sicra-web
+    env: static
+    plan: free
+    region: ohio
+    buildCommand: npm install && npm run build # Or static build command
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: sicra-api
+          property: host

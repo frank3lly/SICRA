@@ -40,17 +40,6 @@ To ensure high availability, zero maintenance costs, and persistent storage with
     └─────────────────────────────────┘   └─────────────────────────────┘
 ```
 
-### Official Role of Each Platform Component:
-
-1. **Database Layer $\to$ Neon Serverless PostgreSQL (`neon.tech`):**
-   * **Role:** Stores all persistent relational data (`businesses`, `containers`, `telemetries`, `predictions`, `alerts`, `routes`, `users`).
-   * **Why Neon:** Render's free PostgreSQL tier automatically wipes and deletes all data every 30 days. Neon provides a **perpetual free PostgreSQL tier** that **never expires**, with automated connection pooling and 0.5 GB storage (enough for hundreds of thousands of telemetry rows).
-2. **Backend API Layer $\to$ Render Web Service (Docker):**
-   * **Role:** Runs the Python 3.12 FastAPI backend, telemetry ingestion endpoint, 80% alerting engine, 2-opt vehicle route optimizer, and ML model inference.
-   * **Configuration:** Built automatically from our multi-stage `Dockerfile`. Connects securely to Neon via the `DATABASE_URL` environment variable.
-3. **Frontend Dashboard $\to$ Render Static Site:**
-   * **Role:** Delivers the Stage 400 interactive web interface (Fleet map, collector routes, business owner gauges).
-   * **Why Render Static Site:** Static sites on Render are 100% free and distributed over a global CDN. Unlike web services, **static sites never sleep and have zero cold starts**, providing instant page loading.
 
 ---
 

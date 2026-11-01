@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+*$py.class
+.git/
+.gitignore
+.venv/
+venv/
+.pytest_cache/
+*.db
+data/*.db
+data/sicra.db
+data/synthetic/
+dist/
+node_modules/
+.DS_Store
