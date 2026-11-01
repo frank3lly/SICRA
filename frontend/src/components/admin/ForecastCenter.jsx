@@ -130,7 +130,7 @@ export function ForecastCenter({ onBack, initialProjections = [] }) {
     ? `${pendingCritical[0].hoursTo80} h · ${pendingCritical[0].name.split('-')[0].trim()}`
     : overflowImminent.length > 0
     ? '¡Recolección Inmediata!'
-    : 'Flota con espacio';
+    : 'No disponible';
 
   return (
     <div className="forecast-page">
