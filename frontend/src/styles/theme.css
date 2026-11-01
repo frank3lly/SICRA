@@ -845,6 +845,62 @@ header, main {
   }
 }
 
+/* Modal and Form Dialogs */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: color-mix(in srgb, #121A40 50%, transparent);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.modal-card {
+  width: 100%;
+  max-width: 540px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: var(--card);
+  border-radius: 14px;
+  padding: 28px 24px;
+  border: 1px solid var(--line);
+  box-shadow: 0 16px 48px color-mix(in srgb, #1B2A66 20%, transparent);
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--ink);
+}
+
+.form-control {
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 14px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink);
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  font-family: inherit;
+}
+
+.form-control:focus {
+  border-color: var(--p);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--p) 20%, transparent);
+}
+
 /* Print Styles for Dispatch Itinerary */
 @media print {
   header,

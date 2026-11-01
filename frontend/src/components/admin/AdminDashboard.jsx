@@ -12,6 +12,7 @@ import {
 } from '../common';
 import { FleetTable } from './FleetTable';
 import { ComplianceCard } from './ComplianceCard';
+import { AddBusinessModal } from './AddBusinessModal';
 import {
   fetchEnvironmentalStats,
   fetchContainers,
@@ -30,6 +31,18 @@ export function AdminDashboard({ onOpenForecast }) {
   const [serverConnected, setServerConnected] = useState(true);
   const [isCalculating, setIsCalculating] = useState(false);
   const [btnText, setBtnText] = useState('Correr Proyección');
+  const [isAddBusinessOpen, setIsAddBusinessOpen] = useState(false);
+  const [successToast, setSuccessToast] = useState(null);
+
+  const handleBusinessAdded = async (newBiz) => {
+    setSuccessToast(`Comercio "${newBiz.name}" registrado exitosamente.`);
+    setTimeout(() => setSuccessToast(null), 4000);
+
+    const containerResult = await fetchContainers();
+    if (containerResult.connected && containerResult.containers) {
+      setContainers(containerResult.containers);
+    }
+  };
 
   // Load live data on mount
   useEffect(() => {
@@ -139,11 +152,44 @@ export function AdminDashboard({ onOpenForecast }) {
           >
             <span>{isCalculating ? 'Calculando…' : btnText}</span>
           </Button>
-          <Button icon={<PlusIcon />}>
+          <Button icon={<PlusIcon />} onClick={() => setIsAddBusinessOpen(true)}>
             Nuevo comercio
           </Button>
         </div>
       </div>
+
+      {/* Success Notification Banner */}
+      {successToast && (
+        <div
+          className="note"
+          style={{
+            background: 'color-mix(in srgb, var(--g) 15%, transparent)',
+            color: 'var(--g)',
+            border: '1px solid color-mix(in srgb, var(--g) 30%, transparent)',
+            margin: '20px 0 0',
+            fontSize: '13px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between'
+          }}
+        >
+          <span>✓ {successToast}</span>
+          <button
+            type="button"
+            onClick={() => setSuccessToast(null)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'inherit',
+              cursor: 'pointer',
+              fontWeight: 600,
+              padding: '0 4px'
+            }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Aggregate Metric Cards */}
       <div className="grid g4" style={{ margin: '28px 0 20px' }}>
@@ -222,7 +268,7 @@ export function AdminDashboard({ onOpenForecast }) {
           <div className="note" style={{ background: 'var(--nt)' }}>
             <TruckIcon />
             <span>
-              11 comercios monitoreados en San Pedro de Macorís con telemetría activa y calibración de tara.
+              {containers.length || 11} comercios monitoreados en San Pedro de Macorís con telemetría activa y calibración de tara.
             </span>
           </div>
           <div style={{ marginTop: '18px' }}>
@@ -235,6 +281,13 @@ export function AdminDashboard({ onOpenForecast }) {
 
       {/* Full-Width Fleet Table */}
       <FleetTable containers={containers} />
+
+      {/* Modal for adding new business */}
+      <AddBusinessModal
+        isOpen={isAddBusinessOpen}
+        onClose={() => setIsAddBusinessOpen(false)}
+        onSuccess={handleBusinessAdded}
+      />
     </section>
   );
 }
