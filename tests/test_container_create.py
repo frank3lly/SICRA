@@ -115,3 +115,34 @@ def test_create_container_nonexistent_business_returns_404(client_and_engine):
     }
     create_res = client.post("/api/v1/containers/", json=payload, headers=headers)
     assert create_res.status_code == 404
+
+
+def test_create_small_3_liter_container(client_and_engine):
+    """Verify that a small 3-liter container can be provisioned properly."""
+    client, engine = client_and_engine
+
+    login_res = client.post(
+        "/api/v1/auth/login",
+        json={"email": "admin@sicra.do", "password": ADMIN_PASSWORD},
+    )
+    assert login_res.status_code == 200
+    token = login_res.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    with get_db_context(engine) as db:
+        biz = db.query(Business).first()
+        assert biz is not None
+        biz_id = str(biz.id)
+
+    payload = {
+        "business_id": biz_id,
+        "capacity_liters": 3.0,
+        "tare_weight_kg": 0.35,
+        "oil_density_kg_l": 0.92,
+    }
+    create_res = client.post("/api/v1/containers/", json=payload, headers=headers)
+    assert create_res.status_code == 201
+    data = create_res.json()
+    assert data["capacity_liters"] == 3.0
+    assert data["tare_weight_kg"] == 0.35
+    assert data["device_token"].startswith("sicra_live_tok_")

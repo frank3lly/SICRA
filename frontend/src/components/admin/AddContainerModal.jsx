@@ -314,7 +314,7 @@ export function AddContainerModal({ isOpen, onClose, onSuccess }) {
               <div className="form-group" style={{ marginTop: '18px' }}>
                 <label>Capacidad del bidón PEAD *</label>
                 <div className="row" style={{ gap: '8px' }}>
-                  {[20, 50, 100].map((cap) => {
+                  {[3, 20, 50, 100].map((cap) => {
                     const isSelected = Number(form.capacity_liters) === cap;
                     return (
                       <button
@@ -322,14 +322,20 @@ export function AddContainerModal({ isOpen, onClose, onSuccess }) {
                         type="button"
                         className={`btn ${isSelected ? 'p' : ''}`}
                         onClick={() => {
-                          const tares = { 20: 2.2, 50: 3.8, 100: 6.5 };
+                          const tares = { 3: 0.35, 20: 2.2, 50: 3.8, 100: 6.5 };
                           setForm({
                             ...form,
                             capacity_liters: cap,
                             tare_weight_kg: tares[cap] || 3.8
                           });
                         }}
-                        style={{ flex: 1, justifyContent: 'center' }}
+                        style={{
+                          flex: 1,
+                          justifyContent: 'center',
+                          padding: '9px 4px',
+                          fontSize: '13px',
+                          whiteSpace: 'nowrap'
+                        }}
                       >
                         {cap} Litros
                       </button>
