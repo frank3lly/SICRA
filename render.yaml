@@ -28,7 +28,7 @@ services:
     plan: free
     region: ohio
     rootDir: frontend
-    buildCommand: corepack enable && pnpm install && pnpm run build
+    buildCommand: pnpm install && pnpm run build
     staticPublishPath: ./dist
     envVars:
       - key: VITE_API_URL
