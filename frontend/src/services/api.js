@@ -423,13 +423,18 @@ export async function createBusiness(payload) {
 }
 
 /**
- * Retrieve list of all registered business establishments
+ * Retrieve list of registered business establishments with optional search and limit
  */
-export async function fetchBusinesses() {
+export async function fetchBusinesses({ search = '', limit = null } = {}) {
   const token = getAuthToken();
   const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-  const res = await fetch(`${API_BASE}/api/v1/businesses/`, { headers });
+  const params = new URLSearchParams();
+  if (search && search.trim()) params.set('search', search.trim());
+  if (limit) params.set('limit', String(limit));
+
+  const qs = params.toString() ? `?${params.toString()}` : '';
+  const res = await fetch(`${API_BASE}/api/v1/businesses/${qs}`, { headers });
   if (!res.ok) {
     throw new Error(`Error al consultar comercios: HTTP ${res.status}`);
   }

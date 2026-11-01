@@ -1,7 +1,7 @@
 """Business entity management and gastronomy establishment REST API endpoints."""
 
-from typing import Any, Dict, List
-from fastapi import APIRouter, Depends, HTTPException, Path, status
+from typing import Any, Dict, List, Optional
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -40,8 +40,10 @@ class BusinessCreatePayload(BaseModel):
 def list_businesses(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    search: Optional[str] = Query(None, description="Filter by business name or address"),
+    limit: Optional[int] = Query(None, ge=1, le=500, description="Max establishments to return"),
 ) -> List[Dict[str, Any]]:
-    """List establishments according to RBAC scope."""
+    """List establishments according to RBAC scope with optional search and limit."""
     user_role_val = (
         current_user.role.value
         if hasattr(current_user.role, "value")
@@ -52,7 +54,15 @@ def list_businesses(
     if user_role_val == UserRole.BUSINESS_OWNER.value:
         query = query.filter(Business.id == current_user.business_id)
 
-    businesses = query.order_by(Business.name.asc()).all()
+    if search and search.strip():
+        term = f"%{search.strip()}%"
+        query = query.filter(Business.name.ilike(term) | Business.address.ilike(term))
+
+    query = query.order_by(Business.name.asc())
+    if limit is not None:
+        query = query.limit(limit)
+
+    businesses = query.all()
     results = []
     for b in businesses:
         results.append(
