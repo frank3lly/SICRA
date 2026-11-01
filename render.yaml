@@ -27,7 +27,8 @@ services:
     env: static
     plan: free
     region: ohio
-    buildCommand: npm install && npm run build # Or static build command
+    rootDir: frontend
+    buildCommand: npm install -g pnpm && pnpm install && pnpm run build
     staticPublishPath: ./dist
     envVars:
       - key: VITE_API_URL
