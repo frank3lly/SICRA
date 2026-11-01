@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Polyline, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Polyline, Popup, AttributionControl, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { Button, ExpandIcon } from '../common';
 import 'leaflet/dist/leaflet.css';
@@ -96,8 +96,10 @@ export function RouteMap({
           center={defaultCenter}
           zoom={14}
           scrollWheelZoom={true}
+          attributionControl={false}
           style={{ width: '100%', height: '100%', minHeight: '300px' }}
         >
+          <AttributionControl prefix={false} />
           <MapResizer isFullscreen={isFullscreen} />
 
           {/* CartoDB Positron / OSM Tiles */}
