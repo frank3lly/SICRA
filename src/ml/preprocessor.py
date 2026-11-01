@@ -257,6 +257,90 @@ class FeaturePipeline:
 
         return np.hstack(cols)
 
+    def transform_single(
+        self,
+        business_type: str,
+        num_fryers: int,
+        avg_daily_customers: int,
+        day_of_week: int,
+        lag_7d_liters: float,
+        business_id: Optional[str] = None,
+    ) -> np.ndarray:
+        """Fast-path vectorized transformation for single inference instances (< 1 ms).
+
+        Args:
+            business_type: Establishment type string.
+            num_fryers: Number of fryers.
+            avg_daily_customers: Customer count.
+            day_of_week: Weekday (0 to 6, or day name).
+            lag_7d_liters: 7-day lagged volume.
+            business_id: Optional establishment ID for median lookup.
+
+        Returns:
+            2D numpy array of shape (1, 31).
+        """
+        if not self._is_fitted:
+            raise RuntimeError("FeaturePipeline must be fitted before calling transform_single.")
+
+        vec = np.zeros(31, dtype=float)
+
+        # 1. Continuous scaled values
+        f_val = float(num_fryers)
+        vec[0] = (f_val - self.scaler_fryers_.mean_[0]) / self.scaler_fryers_.scale_[0]
+
+        c_val = float(avg_daily_customers)
+        vec[1] = (c_val - self.scaler_customers_.mean_[0]) / self.scaler_customers_.scale_[0]
+
+        # Lag imputation and scaling
+        if pd.isna(lag_7d_liters):
+            lag_val = (
+                self.biz_median_lag_.get(str(business_id), self.global_median_lag_)
+                if business_id is not None
+                else self.global_median_lag_
+            )
+        else:
+            lag_val = float(lag_7d_liters)
+
+        vec[2] = (lag_val - self.scaler_lag_.center_[0]) / self.scaler_lag_.scale_[0]
+
+        inter_val = f_val * c_val
+        vec[3] = (inter_val - self.scaler_interaction_.mean_[0]) / self.scaler_interaction_.scale_[0]
+
+        # 2. Categoricals
+        b_type = (
+            business_type.value
+            if hasattr(business_type, "value")
+            else str(business_type).upper().strip()
+        )
+
+        if isinstance(day_of_week, (int, np.integer)):
+            day_name = self.DAY_MAP.get(int(day_of_week), self.REFERENCE_DAY_OF_WEEK)
+        else:
+            day_str = str(day_of_week).strip().capitalize()
+            day_name = day_str if day_str in [self.REFERENCE_DAY_OF_WEEK] + self.CATEGORIES_DAY_OF_WEEK else self.REFERENCE_DAY_OF_WEEK
+
+        offset = 4
+        # Business type dummies
+        for i, bt in enumerate(self.CATEGORIES_BUSINESS_TYPE):
+            if b_type == bt:
+                vec[offset + i] = 1.0
+        offset += len(self.CATEGORIES_BUSINESS_TYPE)
+
+        # Day of week dummies
+        for i, d in enumerate(self.CATEGORIES_DAY_OF_WEEK):
+            if day_name == d:
+                vec[offset + i] = 1.0
+        offset += len(self.CATEGORIES_DAY_OF_WEEK)
+
+        # Domain interaction dummies
+        for bt in self.CATEGORIES_BUSINESS_TYPE:
+            for d in self.CATEGORIES_DAY_OF_WEEK:
+                if b_type == bt and day_name == d:
+                    vec[offset] = 1.0
+                offset += 1
+
+        return vec.reshape(1, -1)
+
     def fit_transform(self, df: pd.DataFrame) -> np.ndarray:
         """Fits pipeline parameters and returns transformed matrix.
 
