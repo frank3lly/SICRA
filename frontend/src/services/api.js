@@ -83,26 +83,36 @@ export async function fetchEnvironmentalStats() {
 }
 
 /**
- * Fetch active containers list from backend
+ * Fetch active containers list from backend with search and pagination support
  */
-export async function fetchContainers() {
+export async function fetchContainers({ search = '', limit = null, offset = 0 } = {}) {
   try {
     const token = await getAuthToken();
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-    const res = await fetch(`${API_BASE}/api/v1/containers/`, { headers });
+    const params = new URLSearchParams();
+    if (search) params.set('search', search);
+    if (limit !== null && limit !== undefined) params.set('limit', String(limit));
+    if (offset) params.set('offset', String(offset));
+
+    const queryString = params.toString() ? `?${params.toString()}` : '';
+    const res = await fetch(`${API_BASE}/api/v1/containers/${queryString}`, { headers });
     if (!res.ok) {
       throw new Error(`HTTP ${res.status}: ${res.statusText}`);
     }
+
+    const totalHeader = res.headers.get('X-Total-Count');
     const data = await res.json();
 
     if (!Array.isArray(data) || data.length === 0) {
-      return { connected: true, containers: [] };
+      return { connected: true, containers: [], total: 0 };
     }
+
+    const total = totalHeader ? parseInt(totalHeader, 10) : data.length;
 
     const containers = data.map((c) => {
       const fill = Math.round(c.current_fill_percentage || 0);
-      const battery = 85; // Simulated hardware voltage metric until hardware sensor hook
+      const battery = 85;
       let status_label = 'Normal';
       let status_variant = '';
 
@@ -129,40 +139,54 @@ export async function fetchContainers() {
       };
     });
 
-    return { connected: true, containers };
+    return { connected: true, containers, total };
   } catch (err) {
     console.error('Failed to fetch containers from server:', err.message);
     return {
       connected: false,
       error: 'No se pudo conectar al servidor para obtener los contenedores.',
-      containers: []
+      containers: [],
+      total: 0
     };
   }
 }
 
 /**
- * Fetch latest volumetric projections for the fleet
+ * Fetch latest volumetric projections with search and pagination support
  */
-export async function fetchLatestPredictions() {
+export async function fetchLatestPredictions({ search = '', limit = null, offset = 0 } = {}) {
   try {
     const token = await getAuthToken();
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-    const res = await fetch(`${API_BASE}/api/v1/predictions/latest`, { headers });
+    const params = new URLSearchParams();
+    if (search) params.set('search', search);
+    if (limit !== null && limit !== undefined) params.set('limit', String(limit));
+    if (offset) params.set('offset', String(offset));
+
+    const queryString = params.toString() ? `?${params.toString()}` : '';
+    const res = await fetch(`${API_BASE}/api/v1/predictions/latest${queryString}`, { headers });
     if (!res.ok) {
       throw new Error(`HTTP ${res.status}: ${res.statusText}`);
     }
+
+    const totalHeader = res.headers.get('X-Total-Count');
     const data = await res.json();
+    const projections = Array.isArray(data) ? data : [];
+    const total = totalHeader ? parseInt(totalHeader, 10) : projections.length;
+
     return {
       connected: true,
-      projections: Array.isArray(data) ? data : []
+      projections,
+      total
     };
   } catch (err) {
     console.error('Failed to fetch predictions from server:', err.message);
     return {
       connected: false,
       error: 'Sin conexión para proyecciones.',
-      projections: []
+      projections: [],
+      total: 0
     };
   }
 }

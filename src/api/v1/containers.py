@@ -1,7 +1,7 @@
 """Smart container hardware and calibration REST API endpoints for SICRA."""
 
-from typing import Any, Dict, List
-from fastapi import APIRouter, Depends, HTTPException, Path, status
+from typing import Any, Dict, List, Optional
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, Response, status
 from sqlalchemy.orm import Session
 
 from src.database.session import get_db
@@ -20,10 +20,14 @@ router = APIRouter()
     summary="Fleet smart containers overview",
 )
 def list_containers(
+    response: Response,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    limit: Optional[int] = Query(None, ge=1, le=500, description="Max containers to return"),
+    offset: int = Query(0, ge=0, description="Offset pagination index"),
+    search: Optional[str] = Query(None, description="Filter by business name"),
 ) -> List[Dict[str, Any]]:
-    """Retrieve list of smart containers scoped to the caller's role."""
+    """Retrieve list of smart containers scoped to the caller's role with optional search and pagination."""
     user_role_val = (
         current_user.role.value
         if hasattr(current_user.role, "value")
@@ -34,8 +38,20 @@ def list_containers(
     if user_role_val == UserRole.BUSINESS_OWNER.value:
         query = query.filter(Container.business_id == current_user.business_id)
 
+    if search:
+        query = query.filter(Business.name.ilike(f"%{search.strip()}%"))
+
+    total_count = query.count()
+    response.headers["X-Total-Count"] = str(total_count)
+
+    query = query.order_by(Container.created_at.desc())
+    if offset:
+        query = query.offset(offset)
+    if limit is not None:
+        query = query.limit(limit)
+
     results = []
-    for container, business in query.order_by(Container.created_at.desc()).all():
+    for container, business in query.all():
         results.append(
             {
                 "id": str(container.id),

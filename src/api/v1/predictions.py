@@ -1,8 +1,9 @@
 """Predictive modeling and daily generation forecast REST API endpoints for SICRA."""
 
 from datetime import date, datetime, timezone
-from typing import Any, Dict, List
-from fastapi import APIRouter, Depends, HTTPException, Path, status
+from typing import Any, Dict, List, Optional
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, Response, status
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from src.database.session import get_db
@@ -33,17 +34,40 @@ def get_inference_engine() -> InferenceEngine:
     summary="Get latest volumetric predictions for active fleet containers",
 )
 def get_fleet_predictions(
+    response: Response,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    limit: Optional[int] = Query(None, ge=1, le=500, description="Max records to return (e.g. 11)"),
+    offset: int = Query(0, ge=0, description="Pagination offset"),
+    search: Optional[str] = Query(None, description="Search filter by name, address, or city"),
 ) -> List[Dict[str, Any]]:
-    """Retrieve latest prediction records for all active containers."""
-    containers = (
+    """Retrieve latest prediction records with server-side search and pagination."""
+    query = (
         db.query(Container, Business)
         .join(Business, Container.business_id == Business.id)
         .filter(Container.status == ContainerStatus.ACTIVE)
-        .all()
     )
 
+    if search:
+        search_term = f"%{search.strip()}%"
+        query = query.filter(
+            or_(
+                Business.name.ilike(search_term),
+                Business.address.ilike(search_term),
+                Business.city.ilike(search_term),
+            )
+        )
+
+    total_count = query.count()
+    response.headers["X-Total-Count"] = str(total_count)
+
+    query = query.order_by(Business.name.asc())
+    if offset:
+        query = query.offset(offset)
+    if limit is not None:
+        query = query.limit(limit)
+
+    containers = query.all()
     results = []
     for container, business in containers:
         latest_pred = (

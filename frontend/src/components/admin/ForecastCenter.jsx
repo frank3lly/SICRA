@@ -13,6 +13,8 @@ import {
 } from '../common';
 import { runFleetForecast, fetchLatestPredictions } from '../../services/api';
 
+const PAGE_SIZE = 11;
+
 const getBarColor = (pct) => {
   if (pct >= 95) return 'var(--red)';
   if (pct >= 80) return 'var(--yel)';
@@ -20,7 +22,7 @@ const getBarColor = (pct) => {
 };
 
 /**
- * Dedicated Full-Page Forecast View
+ * Dedicated Full-Page Forecast View with Search and 11-Item Pagination
  * @param {function} onBack - Handler to return to the fleet overview
  * @param {Array<object>} initialProjections - Initial predictions from server
  */
@@ -28,6 +30,8 @@ export function ForecastCenter({ onBack, initialProjections = [] }) {
   const [projections, setProjections] = useState(initialProjections);
   const [mode, setMode] = useState('p'); // 'p' = 24h fill %, 'l' = daily liters, 'h' = hours to 80%
   const [sortBy, setSortBy] = useState('urgency'); // 'urgency', 'volume', 'name'
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
   const [isRecalculating, setIsRecalculating] = useState(false);
   const [lastCalculated, setLastCalculated] = useState('Reciente');
   const [animated, setAnimated] = useState(false);
@@ -48,7 +52,7 @@ export function ForecastCenter({ onBack, initialProjections = [] }) {
     };
   }, []);
 
-  // Animation trigger on mode or data change
+  // Animation trigger on mode, sort, or pagination change
   useEffect(() => {
     setAnimated(false);
     const timer = requestAnimationFrame(() => {
@@ -57,7 +61,13 @@ export function ForecastCenter({ onBack, initialProjections = [] }) {
       });
     });
     return () => cancelAnimationFrame(timer);
-  }, [mode, sortBy, projections]);
+  }, [mode, sortBy, currentPage, searchQuery]);
+
+  // Reset page when searching
+  const handleSearchChange = (e) => {
+    setSearchQuery(e.target.value);
+    setCurrentPage(1);
+  };
 
   const handleRecalculate = async () => {
     setIsRecalculating(true);
@@ -86,13 +96,33 @@ export function ForecastCenter({ onBack, initialProjections = [] }) {
     return (a.name || '').localeCompare(b.name || '');
   });
 
-  // Aggregate Metrics
+  // Search filtering
+  const filteredData = sortedData.filter((item) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    const nameMatch = (item.name || '').toLowerCase().includes(q);
+    const addressMatch = (item.address || '').toLowerCase().includes(q);
+    const cityMatch = (item.city || '').toLowerCase().includes(q);
+    return nameMatch || addressMatch || cityMatch;
+  });
+
+  // Pagination (Strictly max 11 at a time)
+  const totalItems = filteredData.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const startIndex = (safeCurrentPage - 1) * PAGE_SIZE;
+  const endIndex = Math.min(startIndex + PAGE_SIZE, totalItems);
+  const paginatedTableItems = filteredData.slice(startIndex, endIndex);
+
+  // Top items for visual chart (capped at max 11 for clarity)
+  const chartItems = sortedData.slice(0, PAGE_SIZE);
+
+  // Aggregate Metrics across all records
   const criticalContainers = projections.filter((p) => (p.forecastPct ?? 0) >= 80);
   const overflowImminent = projections.filter((p) => (p.forecastPct ?? 0) >= 95);
   const totalProjectedLiters = projections.reduce((acc, p) => acc + (p.dailyLiters || 0), 0);
   const avgDailyLiters = projections.length > 0 ? (totalProjectedLiters / projections.length).toFixed(1) : '0';
 
-  // Find next critical stop
   const pendingCritical = projections
     .filter((p) => typeof p.hoursTo80 === 'number' && p.hoursTo80 > 0)
     .sort((a, b) => a.hoursTo80 - b.hoursTo80);
@@ -154,13 +184,13 @@ export function ForecastCenter({ onBack, initialProjections = [] }) {
         />
       </div>
 
-      {/* Visualizer Card */}
+      {/* Visualizer Card (Visualizes top 11 items) */}
       <Card style={{ marginBottom: '24px', padding: '28px' }}>
         <div className="row sp" style={{ marginBottom: '20px' }}>
           <div>
             <h2>Pronóstico de la Flota</h2>
             <div className="sm mut">
-              Comparativa de llenado actual frente al nivel proyectado en 24 horas.
+              Comparativa de los {chartItems.length} comercios más prioritarios de la red.
             </div>
           </div>
 
@@ -181,7 +211,7 @@ export function ForecastCenter({ onBack, initialProjections = [] }) {
         {/* Order Selector */}
         <div className="row sp sm mut" style={{ padding: '8px 0', borderBottom: '1px solid var(--line)', marginBottom: '16px' }}>
           <span>
-            Mostrando <b>{sortedData.length} comercios activos</b>
+            Mostrando <b>{chartItems.length} de {sortedData.length} comercios</b> según prioridad
           </span>
           <div className="row" style={{ gap: '8px' }}>
             <span>Ordenar por:</span>
@@ -212,7 +242,7 @@ export function ForecastCenter({ onBack, initialProjections = [] }) {
           </div>
         </div>
 
-        {sortedData.length === 0 ? (
+        {chartItems.length === 0 ? (
           <div
             className="note"
             style={{
@@ -233,7 +263,7 @@ export function ForecastCenter({ onBack, initialProjections = [] }) {
                 </div>
               )}
 
-              {sortedData.map((item, idx) => {
+              {chartItems.map((item, idx) => {
                 const currentPct = item.currentPct ?? 0;
                 const forecastPct = item.forecastPct ?? 0;
                 const dailyL = item.dailyLiters ?? 0;
@@ -291,7 +321,6 @@ export function ForecastCenter({ onBack, initialProjections = [] }) {
                   );
                 }
 
-                // Hours mode
                 const maxHoursScale = 96;
                 const validHours = Math.max(0, hours);
                 const heightPct = Math.min((validHours / maxHoursScale) * 100, 100);
@@ -315,7 +344,7 @@ export function ForecastCenter({ onBack, initialProjections = [] }) {
             </div>
 
             <div className="labs">
-              {sortedData.map((item, idx) => (
+              {chartItems.map((item, idx) => (
                 <div key={item.container_id || idx} style={{ fontSize: '11px', lineHeight: 1.25 }}>
                   {item.name.replace('San Pedro', '').replace('Macorís', '').trim()}
                 </div>
@@ -349,16 +378,52 @@ export function ForecastCenter({ onBack, initialProjections = [] }) {
         )}
       </Card>
 
-      {/* Detail Table */}
+      {/* Detail Table with Searchbar and 11-Item Pagination */}
       <Card style={{ padding: '28px' }}>
-        <div className="row sp" style={{ marginBottom: '18px' }}>
+        <div className="row sp" style={{ marginBottom: '18px', gap: '16px' }}>
           <div>
             <h2>Detalle por Comercio</h2>
             <div className="sm mut">
               Estimación de llenado y horas restantes para planificar las visitas de recolección.
             </div>
           </div>
-          <span className="chip">{sortedData.length} Comercios</span>
+
+          {/* Searchbar */}
+          <div className="search-box">
+            <svg
+              className="i"
+              viewBox="0 0 24 24"
+              style={{ width: '16px', height: '16px', color: 'var(--mut)' }}
+            >
+              <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" fill="none" />
+              <line x1="16" y1="16" x2="21" y2="21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+            <input
+              type="text"
+              className="search-input"
+              placeholder="Buscar comercio o dirección…"
+              value={searchQuery}
+              onChange={handleSearchChange}
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery('');
+                  setCurrentPage(1);
+                }}
+                style={{
+                  border: 0,
+                  background: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--mut)',
+                  fontSize: '13px'
+                }}
+              >
+                ✕
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="scroll">
@@ -374,85 +439,122 @@ export function ForecastCenter({ onBack, initialProjections = [] }) {
               </tr>
             </thead>
             <tbody>
-              {sortedData.map((item) => {
-                const currentPct = Math.round(item.currentPct ?? 0);
-                const forecastPct = Math.round(item.forecastPct ?? 0);
-                const dailyL = item.dailyLiters ?? 0;
-                const hours = item.hoursTo80;
-                const currentVol = item.currentVolumeLiters ?? Math.round((currentPct / 100) * (item.capacityLiters || 50));
-                const capacity = item.capacityLiters ?? 50;
+              {paginatedTableItems.length === 0 ? (
+                <tr>
+                  <td colSpan="6" style={{ textAlign: 'center', padding: '36px', color: 'var(--mut)' }}>
+                    {searchQuery ? `No se encontraron comercios que coincidan con "${searchQuery}".` : 'No hay datos disponibles.'}
+                  </td>
+                </tr>
+              ) : (
+                paginatedTableItems.map((item) => {
+                  const currentPct = Math.round(item.currentPct ?? 0);
+                  const forecastPct = Math.round(item.forecastPct ?? 0);
+                  const dailyL = item.dailyLiters ?? 0;
+                  const hours = item.hoursTo80;
+                  const currentVol = item.currentVolumeLiters ?? Math.round((currentPct / 100) * (item.capacityLiters || 50));
+                  const capacity = item.capacityLiters ?? 50;
 
-                let priorityLabel = 'Normal';
-                let priorityVariant = '';
-                if (forecastPct >= 95 || hours === 0) {
-                  priorityLabel = 'Inmediata (< 12h)';
-                  priorityVariant = 'c';
-                } else if (forecastPct >= 80 || (typeof hours === 'number' && hours <= 24)) {
-                  priorityLabel = 'Próximas 24 h';
-                  priorityVariant = 'w';
-                }
+                  let priorityLabel = 'Normal';
+                  let priorityVariant = '';
+                  if (forecastPct >= 95 || hours === 0) {
+                    priorityLabel = 'Inmediata (< 12h)';
+                    priorityVariant = 'c';
+                  } else if (forecastPct >= 80 || (typeof hours === 'number' && hours <= 24)) {
+                    priorityLabel = 'Próximas 24 h';
+                    priorityVariant = 'w';
+                  }
 
-                return (
-                  <tr key={item.container_id || item.name}>
-                    <td className="business-name-cell">
-                      <div style={{ fontWeight: 600, color: 'var(--ink)' }}>{item.name}</div>
-                      <div className="sm mut">{item.address || 'San Pedro de Macorís'}</div>
-                    </td>
-                    <td>
-                      <div className="row" style={{ flexWrap: 'nowrap', gap: '8px' }}>
-                        <div className="bar" style={{ width: '90px' }}>
-                          <i
-                            className={currentPct >= 95 ? 'c' : currentPct >= 80 ? 'w' : ''}
-                            style={{ width: `${currentPct}%` }}
-                          />
+                  return (
+                    <tr key={item.container_id || item.name}>
+                      <td className="business-name-cell">
+                        <div style={{ fontWeight: 600, color: 'var(--ink)' }}>{item.name}</div>
+                        <div className="sm mut">{item.address || 'San Pedro de Macorís'}</div>
+                      </td>
+                      <td>
+                        <div className="row" style={{ flexWrap: 'nowrap', gap: '8px' }}>
+                          <div className="bar" style={{ width: '90px' }}>
+                            <i
+                              className={currentPct >= 95 ? 'c' : currentPct >= 80 ? 'w' : ''}
+                              style={{ width: `${currentPct}%` }}
+                            />
+                          </div>
+                          <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: '13px' }}>
+                            {currentVol} / {capacity} L ({currentPct}%)
+                          </span>
                         </div>
-                        <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: '13px' }}>
-                          {currentVol} / {capacity} L ({currentPct}%)
-                        </span>
-                      </div>
-                    </td>
-                    <td>
-                      <div className="row" style={{ flexWrap: 'nowrap', gap: '8px' }}>
-                        <div className="bar" style={{ width: '90px' }}>
-                          <i
-                            className={forecastPct >= 95 ? 'c' : forecastPct >= 80 ? 'w' : ''}
-                            style={{ width: `${forecastPct}%` }}
-                          />
+                      </td>
+                      <td>
+                        <div className="row" style={{ flexWrap: 'nowrap', gap: '8px' }}>
+                          <div className="bar" style={{ width: '90px' }}>
+                            <i
+                              className={forecastPct >= 95 ? 'c' : forecastPct >= 80 ? 'w' : ''}
+                              style={{ width: `${forecastPct}%` }}
+                            />
+                          </div>
+                          <span
+                            style={{
+                              fontWeight: 600,
+                              fontVariantNumeric: 'tabular-nums',
+                              color: forecastPct >= 95 ? 'var(--red)' : forecastPct >= 80 ? 'var(--yel)' : 'var(--g)'
+                            }}
+                          >
+                            {forecastPct}%
+                          </span>
                         </div>
-                        <span
-                          style={{
-                            fontWeight: 600,
-                            fontVariantNumeric: 'tabular-nums',
-                            color: forecastPct >= 95 ? 'var(--red)' : forecastPct >= 80 ? 'var(--yel)' : 'var(--g)'
-                          }}
-                        >
-                          {forecastPct}%
-                        </span>
-                      </div>
-                    </td>
-                    <td style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 500 }}>
-                      +{String(dailyL).replace('.', ',')} L/día
-                    </td>
-                    <td>
-                      {hours === 0 ? (
-                        <span className="time-to-critical urgent">¡Ya superado!</span>
-                      ) : typeof hours === 'number' && hours > 0 ? (
-                        <span className={`time-to-critical ${hours <= 24 ? 'warning' : 'safe'}`}>
-                          {hours} horas
-                        </span>
-                      ) : (
-                        <span className="sm mut">—</span>
-                      )}
-                    </td>
-                    <td style={{ textAlign: 'right' }}>
-                      <Chip variant={priorityVariant}>{priorityLabel}</Chip>
-                    </td>
-                  </tr>
-                );
-              })}
+                      </td>
+                      <td style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 500 }}>
+                        +{String(dailyL).replace('.', ',')} L/día
+                      </td>
+                      <td>
+                        {hours === 0 ? (
+                          <span className="time-to-critical urgent">¡Ya superado!</span>
+                        ) : typeof hours === 'number' && hours > 0 ? (
+                          <span className={`time-to-critical ${hours <= 24 ? 'warning' : 'safe'}`}>
+                            {hours} horas
+                          </span>
+                        ) : (
+                          <span className="sm mut">—</span>
+                        )}
+                      </td>
+                      <td style={{ textAlign: 'right' }}>
+                        <Chip variant={priorityVariant}>{priorityLabel}</Chip>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Bar (Max 11 per page) */}
+        {totalItems > 0 && (
+          <div className="pagination-bar">
+            <span className="sm mut">
+              Página <b>{safeCurrentPage}</b> de <b>{totalPages}</b> · Mostrando{' '}
+              <b>{startIndex + 1}–{endIndex}</b> de <b>{totalItems}</b> comercios
+            </span>
+
+            <div className="row" style={{ gap: '8px' }}>
+              <button
+                type="button"
+                className="pagination-btn"
+                disabled={safeCurrentPage <= 1}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              >
+                ← Anterior
+              </button>
+              <button
+                type="button"
+                className="pagination-btn"
+                disabled={safeCurrentPage >= totalPages}
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              >
+                Siguiente →
+              </button>
+            </div>
+          </div>
+        )}
       </Card>
     </div>
   );

@@ -718,6 +718,71 @@ header, main {
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Search Box and Pagination Controls */
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 7px 14px;
+  min-width: 260px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.search-box:focus-within {
+  border-color: var(--g);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--g) 20%, transparent);
+}
+
+.search-input {
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: 400 14px Inter, sans-serif;
+  width: 100%;
+  outline: none;
+}
+
+.search-input::placeholder {
+  color: var(--mut);
+}
+
+.pagination-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.pagination-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  font: 500 13px Inter, sans-serif;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: var(--nt);
+}
+
+.pagination-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .forecast-banner {
   display: flex;
   justify-content: space-between;
