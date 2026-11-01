@@ -128,6 +128,19 @@ class LoadCellRateEstimator:
 
         return t_hours, v_clean, current_volume
 
+    def _calculate_slope_from_arrays(self, t: np.ndarray, v: np.ndarray) -> float:
+        """Calculates slope directly from pre-cleaned arrays."""
+        if len(t) < self.min_samples:
+            return 0.0
+
+        t_diff = t - np.mean(t)
+        v_diff = v - np.mean(v)
+        denominator = float(np.sum(t_diff**2))
+        if denominator == 0.0:
+            return 0.0
+
+        return float(np.sum(t_diff * v_diff) / denominator)
+
     def calculate_slope(self, telemetry_df: pd.DataFrame) -> float:
         """Calculates local linear rate of change (m = ΔV / Δt) in Liters / Hour.
 
@@ -140,16 +153,7 @@ class LoadCellRateEstimator:
             Slope m in Liters/hour. Returns 0.0 if insufficient data or zero variance.
         """
         t, v, _ = self._extract_and_prepare(telemetry_df)
-        if len(t) < self.min_samples:
-            return 0.0
-
-        t_diff = t - np.mean(t)
-        v_diff = v - np.mean(v)
-        denominator = float(np.sum(t_diff**2))
-        if denominator == 0.0:
-            return 0.0
-
-        return float(np.sum(t_diff * v_diff) / denominator)
+        return self._calculate_slope_from_arrays(t, v)
 
     def estimate_hours_to_threshold(
         self,
@@ -186,7 +190,7 @@ class LoadCellRateEstimator:
         if len(t) < self.min_samples:
             return None
 
-        m = self.calculate_slope(telemetry_df)
+        m = self._calculate_slope_from_arrays(t, v)
         if m <= 0.0:
             return float("inf")
 

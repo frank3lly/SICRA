@@ -223,3 +223,46 @@ def test_predict_hours_to_80_percent_boundary_conditions() -> None:
     # Rate: 24 L/day (= 1 L/h) -> remaining 20 hours
     hours = engine.predict_hours_to_80_percent(20.0, 50.0, 24.0)
     assert hours == pytest.approx(20.0, abs=1e-5)
+
+
+def test_evaluator_cross_validation_metrics(processed_data) -> None:
+    """Verifies that ChronologicalEvaluator.cross_validate() computes fold metrics."""
+    train_df, _ = processed_data
+    evaluator = ChronologicalEvaluator(time_col="date", target_col="daily_liters")
+    model = RegularizedLinearPredictor(method="ridge", alpha=1.0)
+
+    cv_results = evaluator.cross_validate(model=model, df=train_df, n_splits=5)
+
+    assert cv_results["n_splits"] == 5
+    assert len(cv_results["fold_maes"]) == 5
+    assert len(cv_results["fold_rmses"]) == 5
+    assert len(cv_results["fold_r2s"]) == 5
+    assert cv_results["mean_mae"] > 0.0
+    assert cv_results["mean_rmse"] > 0.0
+
+
+def test_cli_end_to_end_execution(processed_data, monkeypatch) -> None:
+    """Verifies that the CLI executes end-to-end, evaluates Golden Rule, and persists artifacts."""
+    from src.ml.cli import main
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        test_args = [
+            "cli.py",
+            "--data-dir", "data/processed",
+            "--model-type", "glm",
+            "--family", "poisson",
+            "--alpha", "0.1",
+            "--enforce-r04",
+            "--save-dir", tmpdir,
+        ]
+        monkeypatch.setattr("sys.argv", test_args)
+
+        exit_code = main()
+        assert exit_code == 0
+
+        reg = ModelRegistry(tmpdir)
+        assert reg.is_production_ready()
+        meta = reg.load_metadata()
+        assert meta["r04_passed"] is True
+        assert meta["algorithm"] == "GLMPredictor"
+        assert meta["test_mae"] < meta["baseline_mae"]

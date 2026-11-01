@@ -30,19 +30,24 @@ class RegularizedLinearPredictor(BasePredictor):
         self.feature_names_: list[str] = []
 
     def fit(
-        self, X: pd.DataFrame, y: pd.Series
+        self, X: Union[pd.DataFrame, np.ndarray], y: Union[pd.Series, np.ndarray]
     ) -> "RegularizedLinearPredictor":
         """Fits preprocessing pipeline and regularized linear model.
 
         Args:
-            X: Input features DataFrame.
+            X: Input features DataFrame or 2D numpy array.
             y: Target daily volumes in liters.
 
         Returns:
             Fitted RegularizedLinearPredictor instance.
         """
-        X_mat = self.pipeline_.fit_transform(X)
-        self.feature_names_ = self.pipeline_.get_feature_names_out()
+        if isinstance(X, pd.DataFrame):
+            X_mat = self.pipeline_.fit_transform(X)
+            self.feature_names_ = self.pipeline_.get_feature_names_out()
+        else:
+            X_mat = np.asarray(X, dtype=float)
+            self.feature_names_ = [f"feature_{i}" for i in range(X_mat.shape[1])]
+
         y_arr = np.asarray(y, dtype=float)
 
         if self.method == "lasso":
@@ -64,11 +69,11 @@ class RegularizedLinearPredictor(BasePredictor):
         self.model_.fit(X_mat, y_arr)
         return self
 
-    def predict(self, X: pd.DataFrame) -> np.ndarray:
+    def predict(self, X: Union[pd.DataFrame, np.ndarray]) -> np.ndarray:
         """Predicts non-negative daily volumes in liters/day.
 
         Args:
-            X: Input features DataFrame.
+            X: Input features DataFrame or 2D numpy array.
 
         Returns:
             1D numpy array of clipped predictions (strictly >= 0.0).
@@ -76,7 +81,11 @@ class RegularizedLinearPredictor(BasePredictor):
         if self.model_ is None:
             raise RuntimeError("Model must be fitted before calling predict.")
 
-        X_mat = self.pipeline_.transform(X)
+        if isinstance(X, pd.DataFrame):
+            X_mat = self.pipeline_.transform(X)
+        else:
+            X_mat = np.asarray(X, dtype=float)
+
         raw_preds = self.model_.predict(X_mat)
         return np.maximum(0.0, raw_preds)
 
@@ -119,18 +128,24 @@ class GLMPredictor(BasePredictor):
         self.aic_: Optional[float] = None
         self.feature_weights_: Dict[str, float] = {}
 
-    def fit(self, X: pd.DataFrame, y: pd.Series) -> "GLMPredictor":
+    def fit(
+        self, X: Union[pd.DataFrame, np.ndarray], y: Union[pd.Series, np.ndarray]
+    ) -> "GLMPredictor":
         """Fits preprocessing pipeline and GLM estimator.
 
         Args:
-            X: Input features DataFrame.
+            X: Input features DataFrame or 2D numpy array.
             y: Target daily volumes in liters.
 
         Returns:
             Fitted GLMPredictor instance.
         """
-        X_mat = self.pipeline_.fit_transform(X)
-        self.feature_names_ = self.pipeline_.get_feature_names_out()
+        if isinstance(X, pd.DataFrame):
+            X_mat = self.pipeline_.fit_transform(X)
+            self.feature_names_ = self.pipeline_.get_feature_names_out()
+        else:
+            X_mat = np.asarray(X, dtype=float)
+            self.feature_names_ = [f"feature_{i}" for i in range(X_mat.shape[1])]
 
         # Non-negative target safeguard: Gamma requires strictly positive y (> 0)
         y_arr = np.clip(np.asarray(y, dtype=float), 1e-4, None)
@@ -175,11 +190,11 @@ class GLMPredictor(BasePredictor):
 
         return self
 
-    def predict(self, X: pd.DataFrame) -> np.ndarray:
+    def predict(self, X: Union[pd.DataFrame, np.ndarray]) -> np.ndarray:
         """Returns strictly positive predicted daily volumes in liters/day (y > 0).
 
         Args:
-            X: Input features DataFrame.
+            X: Input features DataFrame or 2D numpy array.
 
         Returns:
             1D numpy array of predicted daily volumes, strictly > 0.0.
@@ -187,7 +202,11 @@ class GLMPredictor(BasePredictor):
         if self.model_ is None:
             raise RuntimeError("Model must be fitted before calling predict.")
 
-        X_mat = self.pipeline_.transform(X)
+        if isinstance(X, pd.DataFrame):
+            X_mat = self.pipeline_.transform(X)
+        else:
+            X_mat = np.asarray(X, dtype=float)
+
         preds = self.model_.predict(X_mat)
         return np.maximum(1e-6, preds)
 
