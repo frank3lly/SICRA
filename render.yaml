@@ -19,7 +19,7 @@ services:
       - key: ACCESS_TOKEN_EXPIRE_MINUTES
         value: 1440
       - key: AUTO_SEED_IF_EMPTY
-        value: "true"
+        value: "false"
 
   # 2. Frontend Web Application (Dashboard & Map)
   - type: static
