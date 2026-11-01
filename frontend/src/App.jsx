@@ -9,7 +9,6 @@ import { getStoredUser, verifySession, logoutUser } from './services/api';
 export function App() {
   const [user, setUser] = useState(() => getStoredUser());
   const [isVerifying, setIsVerifying] = useState(true);
-  const [role, setRole] = useState('admin');
   const [adminSubView, setAdminSubView] = useState('overview'); // 'overview' | 'forecast'
 
   // Verify session on initial mount
@@ -21,13 +20,6 @@ export function App() {
       if (mounted) {
         if (session.authenticated && session.user) {
           setUser(session.user);
-          if (session.user.role === 'COLLECTOR') {
-            setRole('col');
-          } else if (session.user.role === 'BUSINESS_OWNER') {
-            setRole('biz');
-          } else {
-            setRole('admin');
-          }
         } else {
           setUser(null);
         }
@@ -43,20 +35,12 @@ export function App() {
 
   const handleLoginSuccess = (loggedInUser) => {
     setUser(loggedInUser);
-    if (loggedInUser.role === 'COLLECTOR') {
-      setRole('col');
-    } else if (loggedInUser.role === 'BUSINESS_OWNER') {
-      setRole('biz');
-    } else {
-      setRole('admin');
-    }
     setAdminSubView('overview');
   };
 
   const handleLogout = () => {
     logoutUser();
     setUser(null);
-    setRole('admin');
     setAdminSubView('overview');
   };
 
@@ -68,11 +52,6 @@ export function App() {
 
       <Header
         user={user}
-        role={role}
-        setRole={(newRole) => {
-          setRole(newRole);
-          setAdminSubView('overview');
-        }}
         onBrandClick={() => setAdminSubView('overview')}
         onLogout={handleLogout}
       />
@@ -86,28 +65,22 @@ export function App() {
           <LoginView onLoginSuccess={handleLoginSuccess} />
         ) : (
           <>
-            {/* Business Owner view: locked to their establishment */}
+            {/* Business Owner view: strictly isolated to their establishment */}
             {user.role === 'BUSINESS_OWNER' && (
               <BusinessDashboard />
             )}
 
-            {/* Collector view: locked to routing and dispatch */}
+            {/* Collector view: strictly isolated to routing and dispatch */}
             {user.role === 'COLLECTOR' && (
               <CollectorDashboard />
             )}
 
-            {/* Admin view: has fleet oversight and can navigate subviews */}
+            {/* Admin view: strictly isolated to administrative overview and forecasting */}
             {user.role === 'ADMIN' && (
-              role === 'admin' ? (
-                adminSubView === 'forecast' ? (
-                  <ForecastCenter onBack={() => setAdminSubView('overview')} />
-                ) : (
-                  <AdminDashboard onOpenForecast={() => setAdminSubView('forecast')} />
-                )
-              ) : role === 'col' ? (
-                <CollectorDashboard />
+              adminSubView === 'forecast' ? (
+                <ForecastCenter onBack={() => setAdminSubView('overview')} />
               ) : (
-                <BusinessDashboard />
+                <AdminDashboard onOpenForecast={() => setAdminSubView('forecast')} />
               )
             )}
           </>

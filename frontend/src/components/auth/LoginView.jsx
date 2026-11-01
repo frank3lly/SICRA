@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Card, Button, ShieldIcon } from '../common';
+import { Card, Button } from '../common';
 import { loginUser } from '../../services/api';
 
 /**
  * Official Login Screen for SICRA Platform
- * Provides secure authentication with role-based routing and quick demo access.
+ * Production-grade secure authentication gateway.
  */
 export function LoginView({ onLoginSuccess }) {
   const [email, setEmail] = useState('');
@@ -34,24 +34,6 @@ export function LoginView({ onLoginSuccess }) {
     }
   };
 
-  const handleQuickLogin = (demoEmail, demoPassword) => {
-    setEmail(demoEmail);
-    setPassword(demoPassword);
-    setErrorMessage(null);
-    setIsLoading(true);
-
-    loginUser(demoEmail, demoPassword).then((result) => {
-      setIsLoading(false);
-      if (result.success) {
-        if (onLoginSuccess) {
-          onLoginSuccess(result.user);
-        }
-      } else {
-        setErrorMessage(result.error);
-      }
-    });
-  };
-
   return (
     <div
       style={{
@@ -65,9 +47,9 @@ export function LoginView({ onLoginSuccess }) {
       <Card
         style={{
           width: '100%',
-          maxWidth: '440px',
-          padding: '36px 32px',
-          boxShadow: '0 12px 36px color-mix(in srgb, #1B2A66 12%, transparent)'
+          maxWidth: '420px',
+          padding: '40px 32px',
+          boxShadow: '0 16px 40px color-mix(in srgb, #1B2A66 12%, transparent)'
         }}
       >
         <div style={{ textAlign: 'center', marginBottom: '28px' }}>
@@ -118,10 +100,10 @@ export function LoginView({ onLoginSuccess }) {
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="usuario@sicra.do"
+              placeholder="nombre@entidad.do"
               style={{
                 width: '100%',
-                padding: '10px 14px',
+                padding: '11px 14px',
                 fontSize: '14px',
                 borderRadius: '8px',
                 border: '1px solid var(--line)',
@@ -156,7 +138,7 @@ export function LoginView({ onLoginSuccess }) {
               placeholder="••••••••••••"
               style={{
                 width: '100%',
-                padding: '10px 14px',
+                padding: '11px 14px',
                 fontSize: '14px',
                 borderRadius: '8px',
                 border: '1px solid var(--line)',
@@ -177,61 +159,6 @@ export function LoginView({ onLoginSuccess }) {
             <span>{isLoading ? 'Verificando credenciales…' : 'Ingresar al Sistema'}</span>
           </Button>
         </form>
-
-        <div style={{ marginTop: '28px', paddingTop: '20px', borderTop: '1px solid var(--line)' }}>
-          <div className="sm mut" style={{ fontSize: '12px', marginBottom: '10px', textAlign: 'center' }}>
-            Acceso Rápido por Perfil:
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <button
-              type="button"
-              className="btn"
-              onClick={() => handleQuickLogin('admin@sicra.do', 'AdminSecure2026!')}
-              style={{
-                fontSize: '12px',
-                justifyContent: 'space-between',
-                padding: '8px 12px',
-                background: 'var(--card)',
-                border: '1px solid var(--line)'
-              }}
-            >
-              <span><b>Administrador</b> (Flota y Predicción)</span>
-              <span className="mut">admin@sicra.do</span>
-            </button>
-
-            <button
-              type="button"
-              className="btn"
-              onClick={() => handleQuickLogin('operaciones@reoil.do', 'CollectorSecure2026!')}
-              style={{
-                fontSize: '12px',
-                justifyContent: 'space-between',
-                padding: '8px 12px',
-                background: 'var(--card)',
-                border: '1px solid var(--line)'
-              }}
-            >
-              <span><b>Recolector</b> (Ruta y Despacho)</span>
-              <span className="mut">operaciones@reoil.do</span>
-            </button>
-
-            <button
-              type="button"
-              className="btn"
-              onClick={() => handleQuickLogin('picapollo.expreso@sicra.do', 'OwnerSecure2026!')}
-              style={{
-                fontSize: '12px',
-                justifyContent: 'space-between',
-                padding: '8px 12px',
-                background: 'var(--card)',
-                border: '1px solid var(--line)'
-              }}
-            >
-              <span><b>Negocio</b> (Pica Pollo Expreso)</span>
-              <span className="mut">picapollo.expreso@sicra.do</span>
-            </button>
-          </div>
-        </div>
       </Card>
     </div>
   );
