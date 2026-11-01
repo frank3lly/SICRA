@@ -17,7 +17,7 @@ const getBarColor = (pct) => {
  */
 export function ProjectionChart({
   data = [],
-  lastUpdated = 'Actualizada hoy 6:00',
+  lastUpdated = 'Actualizada hoy',
   className = '',
   ...props
 }) {
@@ -36,7 +36,7 @@ export function ProjectionChart({
     return () => cancelAnimationFrame(animTimer);
   }, [mode, data]);
 
-  const criticalCount = data.filter((item) => item.forecastPct >= 95).length;
+  const criticalCount = data.filter((item) => (item.forecastPct ?? 0) >= 95).length;
   const isLitersMode = mode === 'l';
 
   return (
@@ -46,109 +46,131 @@ export function ProjectionChart({
           <h2>Proyección</h2>
           <Chip>{lastUpdated}</Chip>
         </div>
-        <SegmentedControl
-          id="pseg"
-          value={mode}
-          onChange={(newMode) => setMode(newMode)}
-          options={[
-            { value: 'l', label: 'Litros por día' },
-            { value: 'p', label: 'Llenado en 24 h' }
-          ]}
-        />
-      </div>
-
-      <div className="note" style={{ marginTop: '16px' }}>
-        <BellIcon />
-        <span>
-          {criticalCount} contenedores superarán el 95% en las próximas 24 h
-        </span>
-      </div>
-
-      <div className="plot" id="plot" ref={plotRef}>
-        {!isLitersMode && (
-          <div className="thr">
-            <em>80%</em>
-          </div>
+        {data.length > 0 && (
+          <SegmentedControl
+            id="pseg"
+            value={mode}
+            onChange={(newMode) => setMode(newMode)}
+            options={[
+              { value: 'l', label: 'Litros por día' },
+              { value: 'p', label: 'Llenado en 24 h' }
+            ]}
+          />
         )}
-
-        {data.map((item, index) => {
-          if (isLitersMode) {
-            // Liters mode: single green column scaled to max 16L
-            const heightPct = Math.min((item.dailyLiters / 16) * 100, 100);
-            return (
-              <div key={item.name || index} className="col">
-                <div
-                  className="b"
-                  style={{
-                    background: 'var(--g)',
-                    height: animated ? `${heightPct}%` : '0%'
-                  }}
-                >
-                  <span>{String(item.dailyLiters).replace('.', ',')} L</span>
-                </div>
-              </div>
-            );
-          }
-
-          // 24h Fill percentage mode: dual pair comparing currentPct and forecastPct
-          const currentHeight = Math.min(Math.max(item.currentPct, 0), 100);
-          const forecastHeight = Math.min(Math.max(item.forecastPct, 0), 100);
-          const forecastColor = getBarColor(item.forecastPct);
-
-          return (
-            <div key={item.name || index} className="col">
-              <div className="pair">
-                {/* Current Fill Bar (grayish ink tone) */}
-                <div
-                  className="b"
-                  style={{
-                    background: 'color-mix(in srgb, var(--ink) 16%, var(--card))',
-                    height: animated ? `${currentHeight}%` : '0%'
-                  }}
-                >
-                  <span>{item.currentPct}%</span>
-                </div>
-
-                {/* 24h Projected Fill Bar (color coded based on threshold) */}
-                <div
-                  className="b"
-                  style={{
-                    background: forecastColor,
-                    height: animated ? `${forecastHeight}%` : '0%'
-                  }}
-                >
-                  <span>{item.forecastPct}%</span>
-                </div>
-              </div>
-            </div>
-          );
-        })}
       </div>
 
-      <div className="labs" id="labs">
-        {data.map((item, index) => (
-          <div key={item.name || index}>{item.name}</div>
-        ))}
-      </div>
-
-      {!isLitersMode && (
+      {data.length === 0 ? (
         <div
-          className="row sm mut"
-          id="leg"
-          style={{ justifyContent: 'center', marginTop: '14px', gap: '18px' }}
+          className="note"
+          style={{
+            marginTop: '16px',
+            background: 'var(--nt)',
+            color: 'var(--mut)',
+            textAlign: 'center',
+            justifyContent: 'center',
+            padding: '24px'
+          }}
         >
-          <span className="row" style={{ gap: '6px' }}>
-            <i
-              className="sw"
-              style={{ background: 'color-mix(in srgb, var(--ink) 16%, var(--card))' }}
-            />
-            Hoy
-          </span>
-          <span className="row" style={{ gap: '6px' }}>
-            <i className="sw" style={{ background: 'var(--g)' }} />
-            En 24 h
-          </span>
+          No hay proyecciones almacenadas en la base de datos. Presione "Ejecutar proyección" para calcular el pronóstico de la flota.
         </div>
+      ) : (
+        <>
+          <div className="note" style={{ marginTop: '16px' }}>
+            <BellIcon />
+            <span>
+              {criticalCount === 0
+                ? 'Ningún contenedor proyectado supera el 95% en las próximas 24 h'
+                : `${criticalCount} contenedor${criticalCount > 1 ? 'es' : ''} superará${criticalCount > 1 ? 'n' : ''} el 95% en las próximas 24 h`}
+            </span>
+          </div>
+
+          <div className="plot" id="plot" ref={plotRef}>
+            {!isLitersMode && (
+              <div className="thr">
+                <em>80%</em>
+              </div>
+            )}
+
+            {data.map((item, index) => {
+              const liters = item.dailyLiters ?? 0;
+              const currentPct = item.currentPct ?? 0;
+              const forecastPct = item.forecastPct ?? 0;
+
+              if (isLitersMode) {
+                const heightPct = Math.min((liters / 35) * 100, 100);
+                return (
+                  <div key={item.name || index} className="col">
+                    <div
+                      className="b"
+                      style={{
+                        background: 'var(--g)',
+                        height: animated ? `${heightPct}%` : '0%'
+                      }}
+                    >
+                      <span>{String(liters).replace('.', ',')} L</span>
+                    </div>
+                  </div>
+                );
+              }
+
+              const currentHeight = Math.min(Math.max(currentPct, 0), 100);
+              const forecastHeight = Math.min(Math.max(forecastPct, 0), 100);
+              const forecastColor = getBarColor(forecastPct);
+
+              return (
+                <div key={item.name || index} className="col">
+                  <div className="pair">
+                    <div
+                      className="b"
+                      style={{
+                        background: 'color-mix(in srgb, var(--ink) 16%, var(--card))',
+                        height: animated ? `${currentHeight}%` : '0%'
+                      }}
+                    >
+                      <span>{currentPct}%</span>
+                    </div>
+
+                    <div
+                      className="b"
+                      style={{
+                        background: forecastColor,
+                        height: animated ? `${forecastHeight}%` : '0%'
+                      }}
+                    >
+                      <span>{forecastPct}%</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="labs" id="labs">
+            {data.map((item, index) => (
+              <div key={item.name || index}>{item.name}</div>
+            ))}
+          </div>
+
+          {!isLitersMode && (
+            <div
+              className="row sm mut"
+              id="leg"
+              style={{ justifyContent: 'center', marginTop: '14px', gap: '18px' }}
+            >
+              <span className="row" style={{ gap: '6px' }}>
+                <i
+                  className="sw"
+                  style={{ background: 'color-mix(in srgb, var(--ink) 16%, var(--card))' }}
+                />
+                Hoy
+              </span>
+              <span className="row" style={{ gap: '6px' }}>
+                <i className="sw" style={{ background: 'var(--g)' }} />
+                En 24 h
+              </span>
+            </div>
+          )}
+        </>
       )}
     </Card>
   );

@@ -15,34 +15,48 @@ import { ComplianceCard } from './ComplianceCard';
 import {
   fetchEnvironmentalStats,
   fetchContainers,
-  runFleetForecast,
-  DEFAULT_PROJECTIONS
+  fetchLatestPredictions,
+  runFleetForecast
 } from '../../services/api';
 
 /**
  * Admin Fleet Overview and MLOps Supervision Cockpit
+ * Displays live data from FastAPI / SQLite. Indicates when data is unavailable or empty without fake mocks.
  */
 export function AdminDashboard() {
   const [stats, setStats] = useState(null);
   const [containers, setContainers] = useState([]);
-  const [projections, setProjections] = useState(DEFAULT_PROJECTIONS);
+  const [projections, setProjections] = useState([]);
+  const [lastProjectionTime, setLastProjectionTime] = useState('Sin proyecciones aún');
+  const [serverConnected, setServerConnected] = useState(true);
   const [isCalculating, setIsCalculating] = useState(false);
-  const [hasRunProjection, setHasRunProjection] = useState(false);
+  const [showProjectionCard, setShowProjectionCard] = useState(false);
   const [btnText, setBtnText] = useState('Ejecutar proyección');
   const projRef = useRef(null);
 
-  // Fetch initial fleet stats and container list
+  // Load live data on mount
   useEffect(() => {
     let mounted = true;
 
     async function loadData() {
-      const [envStats, containerList] = await Promise.all([
+      const [envResult, containerResult, predResult] = await Promise.all([
         fetchEnvironmentalStats(),
-        fetchContainers()
+        fetchContainers(),
+        fetchLatestPredictions()
       ]);
+
       if (mounted) {
-        setStats(envStats);
-        setContainers(containerList);
+        const isConn = envResult.connected && containerResult.connected;
+        setServerConnected(isConn);
+        setStats(envResult);
+        setContainers(containerResult.containers || []);
+
+        if (predResult.projections && predResult.projections.length > 0) {
+          setProjections(predResult.projections);
+          setLastProjectionTime('Actualizada con modelo predictivo');
+          setShowProjectionCard(true);
+          setBtnText('Actualizar proyección');
+        }
       }
     }
 
@@ -57,37 +71,65 @@ export function AdminDashboard() {
     setBtnText('Calculando…');
 
     try {
-      await runFleetForecast();
-    } catch (e) {
-      console.warn('Forecast API finished with note:', e);
-    }
-
-    // 900ms smooth simulation matching the design reference
-    setTimeout(() => {
-      setIsCalculating(false);
+      const res = await runFleetForecast();
+      if (res.projections && res.projections.length > 0) {
+        setProjections(res.projections);
+      }
+      setLastProjectionTime(`Actualizada ${new Date().toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' })}`);
       setBtnText('Actualizar proyección');
-      setHasRunProjection(true);
+      setShowProjectionCard(true);
 
-      // Smooth scroll into view
       setTimeout(() => {
         if (projRef.current) {
           projRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
       }, 50);
-    }, 900);
+    } catch (e) {
+      console.error('Forecast failed:', e);
+      alert('No se pudo ejecutar la proyección. Asegúrese de que el servidor backend esté activo.');
+      setBtnText('Reintentar proyección');
+    } finally {
+      setIsCalculating(false);
+    }
   };
 
-  const oilLiters = stats?.total_oil_diverted_liters ?? 14250;
-  const co2Avoided = stats?.co2_avoided_kg ?? 40612;
-  const collectionsCount = stats?.total_collections_count ?? 312;
-  const activeAlerts = stats?.active_alerts_count ?? 3;
-  const waterPreserved = stats?.water_preserved_liters ?? 14250000;
+  const oilLiters = stats?.total_oil_diverted_liters;
+  const co2Avoided = stats?.co2_avoided_kg;
+  const collectionsCount = stats?.total_collections_count;
+  const activeAlerts = stats?.active_alerts_count;
+  const waterPreserved = stats?.water_preserved_liters;
 
-  const formattedOil = `${Number(oilLiters).toLocaleString('es-DO')} L`;
-  const formattedCo2 = `${Number(co2Avoided).toLocaleString('es-DO')} kg`;
+  const formattedOil = oilLiters !== null && oilLiters !== undefined
+    ? `${Number(oilLiters).toLocaleString('es-DO')} L`
+    : '—';
+  const formattedCo2 = co2Avoided !== null && co2Avoided !== undefined
+    ? `${Number(co2Avoided).toLocaleString('es-DO')} kg`
+    : '—';
+  const formattedCollections = collectionsCount !== null && collectionsCount !== undefined
+    ? String(collectionsCount)
+    : '—';
+  const formattedAlerts = activeAlerts !== null && activeAlerts !== undefined
+    ? String(activeAlerts)
+    : '—';
 
   return (
     <section id="admin">
+      {!serverConnected && (
+        <div
+          className="note"
+          style={{
+            marginBottom: '20px',
+            background: 'color-mix(in srgb, var(--yel) 18%, var(--card))',
+            color: 'var(--ink)'
+          }}
+        >
+          <BellIcon style={{ color: 'var(--yel)' }} />
+          <span>
+            <b>Atención:</b> No se pudo conectar con el servidor backend en <code>http://127.0.0.1:8000</code>. Los datos mostrados reflejan que no hay conexión activa.
+          </span>
+        </div>
+      )}
+
       <div className="row sp" style={{ alignItems: 'flex-end' }}>
         <div>
           <h1>Panorama de la flota</h1>
@@ -121,22 +163,22 @@ export function AdminDashboard() {
         <StatWidget
           icon={<TruckIcon />}
           label="Recolecciones"
-          value={String(collectionsCount)}
+          value={formattedCollections}
         />
         <StatWidget
           icon={<BellIcon />}
           label="Alertas activas"
-          value={String(activeAlerts)}
+          value={formattedAlerts}
         />
       </div>
 
-      {/* Projection Card (animated and displayed when executed) */}
-      {hasRunProjection && (
+      {/* Projection Card: Displays live predictions from ML inference or empty indicator */}
+      {showProjectionCard && (
         <div ref={projRef}>
           <ProjectionChart
             id="proj"
             data={projections}
-            lastUpdated="Actualizada hoy 6:00"
+            lastUpdated={lastProjectionTime}
           />
         </div>
       )}

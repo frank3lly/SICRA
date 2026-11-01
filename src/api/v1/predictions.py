@@ -1,7 +1,7 @@
 """Predictive modeling and daily generation forecast REST API endpoints for SICRA."""
 
 from datetime import date, datetime, timezone
-from typing import Any, Dict
+from typing import Any, Dict, List
 from fastapi import APIRouter, Depends, HTTPException, Path, status
 from sqlalchemy.orm import Session
 
@@ -26,6 +26,50 @@ def get_inference_engine() -> InferenceEngine:
     if _engine_instance is None:
         _engine_instance = InferenceEngine()
     return _engine_instance
+
+
+@router.get(
+    "/latest",
+    summary="Get latest volumetric predictions for active fleet containers",
+)
+def get_fleet_predictions(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> List[Dict[str, Any]]:
+    """Retrieve latest prediction records for all active containers."""
+    containers = (
+        db.query(Container, Business)
+        .join(Business, Container.business_id == Business.id)
+        .filter(Container.status == ContainerStatus.ACTIVE)
+        .all()
+    )
+
+    results = []
+    for container, business in containers:
+        latest_pred = (
+            db.query(Prediction)
+            .filter(Prediction.container_id == container.id)
+            .order_by(Prediction.calculation_timestamp.desc())
+            .first()
+        )
+        if latest_pred:
+            daily_liters = round(float(latest_pred.predicted_daily_liters or 0.0), 1)
+            cap = float(container.capacity_liters or 50.0)
+            current_pct = round(float(container.current_fill_percentage or 0.0), 1)
+            current_vol = float(container.current_volume_liters or 0.0)
+            forecast_liters = current_vol + daily_liters
+            forecast_pct = round(min(100.0, (forecast_liters / cap) * 100.0), 1)
+
+            results.append({
+                "container_id": str(container.id),
+                "name": business.name,
+                "dailyLiters": daily_liters,
+                "currentPct": current_pct,
+                "forecastPct": forecast_pct,
+                "calculation_timestamp": latest_pred.calculation_timestamp.isoformat(),
+            })
+
+    return results
 
 
 @router.get(

@@ -12,62 +12,76 @@ export function FleetTable({ containers = [], className = '', ...props }) {
         <h2>Contenedores</h2>
         <span className="sm mut">{containers.length} activos</span>
       </div>
-      <div className="scroll">
-        <table>
-          <thead>
-            <tr>
-              <th>Comercio</th>
-              <th>Llenado</th>
-              <th>Batería</th>
-              <th>Estado</th>
-            </tr>
-          </thead>
-          <tbody>
-            {containers.map((container) => {
-              const fillPct = container.current_fill_percentage ?? 0;
-              const batteryPct = container.battery_percentage ?? 85;
+      {containers.length === 0 ? (
+        <div
+          className="note"
+          style={{
+            background: 'var(--nt)',
+            color: 'var(--mut)',
+            textAlign: 'center',
+            justifyContent: 'center',
+            padding: '24px'
+          }}
+        >
+          No hay contenedores registrados en la flota.
+        </div>
+      ) : (
+        <div className="scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Comercio</th>
+                <th>Llenado</th>
+                <th>Batería</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {containers.map((container) => {
+                const fillPct = container.current_fill_percentage ?? 0;
+                const batteryPct = container.battery_percentage ?? 85;
 
-              // Determine status label & chip variant
-              let statusLabel = container.status_label;
-              let statusVariant = container.status_variant;
+                let statusLabel = container.status_label;
+                let statusVariant = container.status_variant;
 
-              if (!statusLabel) {
-                if (batteryPct < 20) {
-                  statusLabel = 'Batería baja';
-                  statusVariant = 'w';
-                } else if (fillPct >= 95) {
-                  statusLabel = 'Crítico';
-                  statusVariant = 'c';
-                } else if (fillPct >= 80) {
-                  statusLabel = 'Casi lleno';
-                  statusVariant = 'w';
-                } else {
-                  statusLabel = 'Normal';
-                  statusVariant = '';
+                if (!statusLabel) {
+                  if (batteryPct < 20) {
+                    statusLabel = 'Batería baja';
+                    statusVariant = 'w';
+                  } else if (fillPct >= 95) {
+                    statusLabel = 'Crítico';
+                    statusVariant = 'c';
+                  } else if (fillPct >= 80) {
+                    statusLabel = 'Casi lleno';
+                    statusVariant = 'w';
+                  } else {
+                    statusLabel = 'Normal';
+                    statusVariant = '';
+                  }
                 }
-              }
 
-              return (
-                <tr key={container.id || container.business_name}>
-                  <td>{container.business_name}</td>
-                  <td>
-                    <div className="row" style={{ flexWrap: 'nowrap', gap: '8px' }}>
-                      <ProgressBar value={fillPct} />
-                      <span style={{ minWidth: '34px', textAlign: 'right' }}>
-                        {fillPct}%
-                      </span>
-                    </div>
-                  </td>
-                  <td>{batteryPct}%</td>
-                  <td>
-                    <Chip variant={statusVariant}>{statusLabel}</Chip>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+                return (
+                  <tr key={container.id || container.business_name}>
+                    <td>{container.business_name}</td>
+                    <td>
+                      <div className="row" style={{ flexWrap: 'nowrap', gap: '8px' }}>
+                        <ProgressBar value={fillPct} />
+                        <span style={{ minWidth: '34px', textAlign: 'right' }}>
+                          {fillPct}%
+                        </span>
+                      </div>
+                    </td>
+                    <td>{batteryPct}%</td>
+                    <td>
+                      <Chip variant={statusVariant}>{statusLabel}</Chip>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
     </Card>
   );
 }
