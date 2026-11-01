@@ -285,3 +285,27 @@ export async function confirmRouteStop(routeId, businessId) {
   }
   return await res.json();
 }
+
+/**
+ * Fetch business container portal details and verified pickup history
+ */
+export async function fetchMyContainer(businessId = null) {
+  try {
+    const token = await getAuthToken();
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    const url = businessId
+      ? `${API_BASE}/api/v1/containers/my-container?business_id=${encodeURIComponent(businessId)}`
+      : `${API_BASE}/api/v1/containers/my-container`;
+
+    const res = await fetch(url, { headers });
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    }
+    const data = await res.json();
+    return { connected: true, data };
+  } catch (err) {
+    console.error('Failed to fetch my container:', err.message);
+    return { connected: false, data: null, error: err.message };
+  }
+}
+
