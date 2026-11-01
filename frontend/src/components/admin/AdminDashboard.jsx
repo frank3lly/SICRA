@@ -8,7 +8,8 @@ import {
   TruckIcon,
   BellIcon,
   SparkIcon,
-  PlusIcon
+  PlusIcon,
+  CheckIcon
 } from '../common';
 import { FleetTable } from './FleetTable';
 import { ComplianceCard } from './ComplianceCard';
@@ -158,7 +159,7 @@ export function AdminDashboard({ onOpenForecast }) {
         <div>
           <h1>Panorama de la flota</h1>
           <div className="sm mut" style={{ marginTop: '4px' }}>
-            Monitoreo en tiempo real de {containers.length} comercios gastronómicos activos
+            Estado operativo: {containers.length} contenedores en servicio
           </div>
         </div>
         <div className="row" style={{ gap: '10px' }}>
@@ -195,10 +196,14 @@ export function AdminDashboard({ onOpenForecast }) {
             fontSize: '13px',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between'
+            justifyContent: 'space-between',
+            borderRadius: '8px'
           }}
         >
-          <span>✓ {successToast}</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+            <CheckIcon style={{ width: '15px', height: '15px', flexShrink: 0 }} />
+            <span>{successToast}</span>
+          </span>
           <button
             type="button"
             onClick={() => setSuccessToast(null)}
@@ -208,10 +213,16 @@ export function AdminDashboard({ onOpenForecast }) {
               color: 'inherit',
               cursor: 'pointer',
               fontWeight: 600,
-              padding: '0 4px'
+              padding: '2px 6px',
+              display: 'inline-flex',
+              alignItems: 'center'
             }}
+            aria-label="Cerrar notificación"
           >
-            ✕
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
           </button>
         </div>
       )}
@@ -252,7 +263,7 @@ export function AdminDashboard({ onOpenForecast }) {
         <div className="row sp" style={{ gap: '16px' }}>
           <div className="row" style={{ gap: '16px', flex: 1, minWidth: '280px' }}>
             <img
-              src="/assets/sicra-isotype.svg"
+              src="/assets/sicra-isotype-dark.svg"
               alt="SICRA"
               style={{ width: '48px', height: '48px', flexShrink: 0 }}
             />
@@ -261,7 +272,7 @@ export function AdminDashboard({ onOpenForecast }) {
               <p className="sm mut" style={{ maxWidth: '65ch', margin: 0 }}>
                 {criticalForecastCount > 0
                   ? `${criticalForecastCount} contenedores alcanzarán el 80% o más de llenado en las próximas 24 horas.`
-                  : 'Estimación de llenado para anticipar las visitas y optimizar rutas.'}
+                  : 'Niveles proyectados y fechas límite de recolección por contenedor.'}
               </p>
             </div>
           </div>
@@ -293,7 +304,7 @@ export function AdminDashboard({ onOpenForecast }) {
           <div className="note" style={{ background: 'var(--nt)' }}>
             <TruckIcon />
             <span>
-              {containers.length || 11} comercios monitoreados en San Pedro de Macorís con telemetría activa y calibración de tara.
+              {containers.length || 11} contenedores operativos en San Pedro de Macorís con telemetría de pesaje y tara calibrada.
             </span>
           </div>
           <div style={{ marginTop: '18px' }}>

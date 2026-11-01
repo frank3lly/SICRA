@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Button, CheckIcon } from '../common';
+import { Button, CheckIcon, SparkIcon } from '../common';
 import { createUser, fetchBusinesses } from '../../services/api';
 
 /**
@@ -269,10 +269,14 @@ export function CreateUserModal({ isOpen, onClose, onSuccess }) {
                     cursor: 'pointer',
                     background: 'var(--nt)',
                     border: '1px solid var(--line)',
-                    fontWeight: 500
+                    fontWeight: 500,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '5px'
                   }}
                 >
-                  ⚡ Generar segura
+                  <SparkIcon style={{ width: '13px', height: '13px', color: 'var(--g)' }} />
+                  <span>Generar segura</span>
                 </button>
               </div>
               <input

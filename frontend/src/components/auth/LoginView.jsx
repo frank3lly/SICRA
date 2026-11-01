@@ -54,13 +54,13 @@ export function LoginView({ onLoginSuccess }) {
       >
         <div style={{ textAlign: 'center', marginBottom: '28px' }}>
           <img
-            src="/assets/sicra-isotype.svg"
-            alt="SICRA Logo"
-            style={{ width: '48px', height: '48px', margin: '0 auto 12px' }}
+            src="/assets/sicra-navbar-dark.svg"
+            alt="SICRA"
+            style={{ height: '42px', width: 'auto', margin: '0 auto 14px', display: 'block' }}
           />
-          <h1 style={{ fontSize: '24px', margin: '0 0 6px' }}>Iniciar Sesión</h1>
-          <div className="sm mut" style={{ fontSize: '13px', lineHeight: 1.4 }}>
-            Plataforma de Trazabilidad y Recolección de Aceite Usado
+          <h1 style={{ fontSize: '22px', margin: '0 0 6px' }}>Iniciar Sesión</h1>
+          <div className="sm mut" style={{ fontSize: '12px', lineHeight: 1.4 }}>
+            Sistema Inteligente de Control y Recolección de Aceite
           </div>
         </div>
 

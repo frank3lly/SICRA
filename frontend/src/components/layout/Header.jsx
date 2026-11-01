@@ -19,24 +19,46 @@ export function Header({
       <div
         className="brand"
         onClick={onBrandClick}
-        style={{ cursor: onBrandClick ? 'pointer' : 'default' }}
-        title="SICRA · Plataforma Oficial"
+        style={{
+          cursor: onBrandClick ? 'pointer' : 'default',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '14px'
+        }}
+        title="SICRA · Sistema Inteligente de Control y Recolección de Aceite"
       >
         <img
-          src="/assets/sicra-isotype.svg"
-          alt="SICRA Isotipo"
-          className="brand-logo-svg"
+          src="/assets/sicra-navbar-dark.svg"
+          alt="SICRA"
+          className="brand-logo-full"
           style={{
-            width: '40px',
-            height: '40px',
+            height: '38px',
+            width: 'auto',
             display: 'block',
             flexShrink: 0
           }}
         />
-        <div>
-          <b>SICRA</b>
-          <div className="sm mut" style={{ lineHeight: 1.2 }}>
-            Control y recolección de aceite
+        <div
+          className="brand-subtitle-container"
+          style={{
+            borderLeft: '1px solid var(--line)',
+            paddingLeft: '12px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center'
+          }}
+        >
+          <div
+            className="sm mut"
+            style={{
+              fontSize: '12px',
+              fontWeight: 500,
+              lineHeight: 1.25,
+              color: 'var(--mut)',
+              maxWidth: '300px'
+            }}
+          >
+            Sistema Inteligente de Control y Recolección de Aceite
           </div>
         </div>
       </div>

@@ -146,6 +146,13 @@ section[hidden] {
   border: 1px solid var(--line);
   border-radius: 14px;
   padding: 22px;
+  transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.24s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.22s ease;
+}
+
+.card:hover {
+  border-color: color-mix(in srgb, var(--g) 32%, var(--line));
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.18);
+  transform: translateY(-2px);
 }
 
 .grid {
@@ -173,6 +180,16 @@ section[hidden] {
 }
 
 /* Stat Widget */
+.stat {
+  transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.24s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.22s ease;
+}
+
+.stat:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--g) 32%, var(--line));
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.18);
+}
+
 .stat .v {
   font: 600 30px "Source Serif 4", Georgia, serif;
   margin-top: 6px;
@@ -202,18 +219,30 @@ section[hidden] {
   padding: 10px 16px;
   border-radius: 10px;
   cursor: pointer;
-  transition: background-color 0.15s ease, opacity 0.15s ease;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   text-decoration: none;
 }
 
 .btn:hover:not(:disabled) {
-  opacity: 0.92;
+  opacity: 0.96;
+  transform: translateY(-1.5px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16);
+  border-color: color-mix(in srgb, var(--g) 30%, var(--line));
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
 }
 
 .btn.p {
   background: var(--g);
   border-color: var(--g);
   color: #fff;
+}
+
+.btn.p:hover:not(:disabled) {
+  box-shadow: 0 5px 18px color-mix(in srgb, var(--g) 40%, transparent);
 }
 
 .btn.n {
@@ -253,6 +282,11 @@ button:focus-visible {
   color: var(--g);
   white-space: nowrap;
   flex-shrink: 0;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.chip:hover {
+  transform: translateY(-1px);
 }
 
 .chip.w {
@@ -639,7 +673,7 @@ td {
   height: 560px;
   pointer-events: none;
   z-index: 0;
-  opacity: 0.045;
+  opacity: 0.12;
   background-image: url('/assets/sicra-drop-smart.svg');
   background-repeat: no-repeat;
   background-position: center;
@@ -655,7 +689,7 @@ td {
   height: 380px;
   pointer-events: none;
   z-index: 0;
-  opacity: 0.025;
+  opacity: 0.08;
   background-image: url('/assets/sicra-recycle-arrows.svg');
   background-repeat: no-repeat;
   background-position: center;
@@ -664,21 +698,23 @@ td {
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .brand-watermark-drop {
-    opacity: 0.07;
-    filter: brightness(1.2);
+    opacity: 0.14;
+    filter: brightness(1.25) contrast(1.1);
   }
   :root:not([data-theme="light"]) .brand-watermark-recycle {
-    opacity: 0.045;
+    opacity: 0.10;
+    filter: brightness(1.2);
   }
 }
 
 :root[data-theme="dark"] .brand-watermark-drop {
-  opacity: 0.07;
-  filter: brightness(1.2);
+  opacity: 0.14;
+  filter: brightness(1.25) contrast(1.1);
 }
 
 :root[data-theme="dark"] .brand-watermark-recycle {
-  opacity: 0.045;
+  opacity: 0.10;
+  filter: brightness(1.2);
 }
 
 header, main {
@@ -845,17 +881,27 @@ header, main {
   }
 }
 
+/* Table Rows Smooth Hover */
+table tbody tr {
+  transition: background-color 0.18s ease;
+}
+
+table tbody tr:hover {
+  background-color: color-mix(in srgb, var(--g) 8%, var(--card)) !important;
+}
+
 /* Modal and Form Dialogs */
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: color-mix(in srgb, #121A40 50%, transparent);
-  backdrop-filter: blur(4px);
+  background: color-mix(in srgb, #000 65%, transparent);
+  backdrop-filter: blur(6px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
   padding: 16px;
+  animation: fadeIn 0.2s ease both;
 }
 
 .modal-card {
@@ -867,7 +913,34 @@ header, main {
   border-radius: 14px;
   padding: 28px 24px;
   border: 1px solid var(--line);
-  box-shadow: 0 16px 48px color-mix(in srgb, #1B2A66 20%, transparent);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+  animation: modalZoomIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes modalZoomIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+main > section {
+  animation: fadeInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .form-group {

@@ -17,12 +17,13 @@ function MapResizer({ isFullscreen }) {
 }
 
 const createStopIcon = (number, isDone) => {
+  const checkSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
   return L.divIcon({
     className: 'custom-stop-marker',
     html: `<div class="n-dot" style="background: ${
       isDone ? '#5D8054' : '#998937'
     }; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 600; font-size: 13px; box-shadow: 0 2px 6px rgba(0,0,0,0.28);">${
-      isDone ? '✓' : number
+      isDone ? checkSvg : number
     }</div>`,
     iconSize: [28, 28],
     iconAnchor: [14, 14]
@@ -30,9 +31,10 @@ const createStopIcon = (number, isDone) => {
 };
 
 const createDepotIcon = () => {
+  const hubSvg = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>';
   return L.divIcon({
     className: 'custom-depot-marker',
-    html: `<div style="background: #1B2A66; width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.35); border: 2px solid #fff;">🏭</div>`,
+    html: `<div style="background: #1B2A66; width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.35); border: 2px solid #fff;">${hubSvg}</div>`,
     iconSize: [30, 30],
     iconAnchor: [15, 15]
   });
@@ -154,7 +156,7 @@ export function RouteMap({
                   <div style={{ fontSize: '12px', marginTop: '2px' }}>
                     Estado:{' '}
                     <span style={{ color: isDone ? '#5D8054' : '#E0A81E', fontWeight: 600 }}>
-                      {isDone ? 'Vaciado ✓' : 'Pendiente de recogida'}
+                      {isDone ? 'Vaciado completado' : 'Pendiente de recogida'}
                     </span>
                   </div>
                 </Popup>

@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, Chip, Button, LeafIcon, ShieldIcon } from '../common';
+import { downloadAuditReportPdf } from '../../services/api';
 
 /**
  * Environmental Traceability & Compliance Card
@@ -14,35 +15,20 @@ export function ComplianceCard({
   className = '',
   ...props
 }) {
+  const [downloading, setDownloading] = useState(false);
   const hasData = waterPreservedLiters !== null && waterPreservedLiters > 0;
   const formattedWater = hasData ? Number(waterPreservedLiters).toLocaleString('es-DO') : '0';
 
-  const handleDownloadReport = () => {
-    if (!hasData) {
-      alert('No hay datos registrados aún para generar el reporte de cumplimiento.');
-      return;
+  const handleDownloadReport = async () => {
+    try {
+      setDownloading(true);
+      await downloadAuditReportPdf();
+    } catch (err) {
+      console.error('Error downloading report PDF:', err);
+      alert('Error al generar el reporte en PDF. Por favor verifica la conexión con el servidor.');
+    } finally {
+      setDownloading(false);
     }
-
-    const reportContent = [
-      'REPORTE DE AUDITORÍA Y TRAZABILIDAD AMBIENTAL - SICRA',
-      'Marco: Gestión Integral y Trazabilidad Certificada de Residuos',
-      `Fecha de Emisión: ${new Date().toLocaleDateString('es-DO')}`,
-      '------------------------------------------------------------',
-      `Aceite Vegetal Usado Desviado: ${Number(oilDivertedLiters || 0).toLocaleString('es-DO')} Litros`,
-      `Agua Potable Preservada: ${formattedWater} Litros (Factor: 1 L aceite = 1,000 L agua)`,
-      `Emisiones de CO2 Evitadas: ${Number(co2AvoidedKg || 0).toLocaleString('es-DO')} kg CO2e`,
-      'Estado: Conforme con los estándares de trazabilidad y recolección'
-    ].join('\n');
-
-    const blob = new Blob([reportContent], { type: 'text/plain;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `reporte_auditoria_ambiental_${new Date().toISOString().slice(0, 10)}.txt`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
   };
 
   return (
@@ -60,8 +46,13 @@ export function ComplianceCard({
         </span>
       </div>
       <div style={{ marginTop: '18px' }}>
-        <Button variant="n" icon={<ShieldIcon />} onClick={handleDownloadReport} disabled={!hasData}>
-          Descargar reporte
+        <Button
+          variant="n"
+          icon={<ShieldIcon />}
+          onClick={handleDownloadReport}
+          disabled={downloading}
+        >
+          {downloading ? 'Generando PDF…' : 'Descargar reporte'}
         </Button>
       </div>
     </Card>

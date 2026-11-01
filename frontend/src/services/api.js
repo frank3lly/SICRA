@@ -522,5 +522,31 @@ export async function fetchUsers({ role = '', search = '' } = {}) {
   return await res.json();
 }
 
+/**
+ * Download publication-grade environmental audit report PDF matching page theme
+ */
+export async function downloadAuditReportPdf() {
+  const token = getAuthToken();
+  const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+  const res = await fetch(`${API_BASE}/api/v1/stats/report-pdf`, { headers });
+  if (!res.ok) {
+    throw new Error(`Error al descargar reporte PDF: HTTP ${res.status}`);
+  }
+  const blob = await res.blob();
+  const dateStr = new Date().toISOString().slice(0, 10);
+  const filename = `Reporte_Trazabilidad_SICRA_${dateStr}.pdf`;
+
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', filename);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(url);
+}
+
+
 
 

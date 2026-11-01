@@ -231,6 +231,13 @@ def test_full_stage_300_lifecycle_e2e(e2e_client):
     assert final_stats["water_preserved_liters"] > initial_water
     assert final_stats["compliance_framework"] == "Trazabilidad y Recoleccion Certificada"
 
+    # Verify publication-grade PDF report download
+    resp_pdf = client.get("/api/v1/stats/report-pdf", headers=collector_headers)
+    assert resp_pdf.status_code == 200
+    assert resp_pdf.headers["content-type"] == "application/pdf"
+    assert resp_pdf.content.startswith(b"%PDF")
+    assert len(resp_pdf.content) > 1000
+
 
 # ==============================================================================
 # Business and Container CRUD Endpoint Tests
