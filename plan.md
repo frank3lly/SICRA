@@ -71,7 +71,7 @@ flowchart LR
 ### [400_etapa_frontend_dashboard_web](file:///home/thegxnster/sicra/__specs__/400_etapa_frontend_dashboard_web/spec.md)
 * **Objetivo:** Crear la interfaz web interactiva y responsiva para empresas recolectoras, generadores de aceite y administradores del sistema.
 * **Componentes clave:**
-  * **Dashboard de la Recolectora:** Mapa interactivo con pines semafóricos (verde $<50\%$, amarillo $50\text{--}79\%$, rojo $\ge 80\%$), listado de alertas y trazo visual de la hoja de ruta del día.
+  * **Dashboard de la Recolectora:** Mapa interactivo con pines semafóricos (#1b2a66, #5D8054, #998937, #f2f2f2), listado de alertas y trazo visual de la hoja de ruta del día.
   * **Portal del Negocio Gastronómico:** Medidor circular simple de volumen, estado amigable y medidor de impacto ecológico (litros de agua protegidos).
   * **Monitor Analítico de ML:** Gráficas comparativas de telemetría real vs. predicción y seguimiento en vivo del cumplimiento de error (MAE).
 * **Entregable:** Aplicación web frontend moderna conectada a las APIs del backend.
