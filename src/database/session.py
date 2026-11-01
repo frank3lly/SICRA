@@ -3,11 +3,14 @@
 from contextlib import contextmanager
 import os
 from typing import Generator, Optional
+from dotenv import load_dotenv
 from sqlalchemy import create_engine, event
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from src.models.base import Base
+
+load_dotenv()
 
 DEFAULT_DATABASE_URL = "sqlite:///./data/sicra.db"
 
@@ -39,9 +42,11 @@ def get_engine(database_url: Optional[str] = None, **kwargs) -> Engine:
     """Create and return a configured SQLAlchemy engine."""
     url = database_url or os.getenv("DATABASE_URL", DEFAULT_DATABASE_URL)
     
-    # Normalize postgres:// scheme for SQLAlchemy 2.0 (Render / Neon compatibility)
+    # Normalize postgres:// and postgresql:// schemes for SQLAlchemy 2.0 (Render / Neon compatibility)
     if url.startswith("postgres://"):
-        url = url.replace("postgres://", "postgresql://", 1)
+        url = url.replace("postgres://", "postgresql+psycopg2://", 1)
+    elif url.startswith("postgresql://") and not url.startswith("postgresql+"):
+        url = url.replace("postgresql://", "postgresql+psycopg2://", 1)
 
     connect_args = kwargs.pop("connect_args", {})
     if "sqlite" in url:
