@@ -48,6 +48,7 @@ The seed data must mirror the authentic ecosystem of Dominican street food, cafe
 | `SPM_BIZ_009` | **Cafetería El Buen Gusto Estudiantil** | `CAFETERIA` | 1 | 95 | 20 L | Entrada Este UCE <br> *(18.4545, -69.3110)* |
 | `SPM_BIZ_010` | **Fritura La Famosa de Placer Bonito** | `FRITURA` | 3 | 260 | 50 L | Sector Placer Bonito, San Pedro de Macorís <br> *(18.4635, -69.3035)* |
 
+SPM_BIZ_011 Agrega Pica Pollo Sandy en SPM tambien: FP55+57C, San Pedro de Macorís 21000
 ---
 
 ### 3.2. Container Provisioning Rules
@@ -69,6 +70,14 @@ For each business seeded above:
 ### 3.3. Initial System Users Seed
 
 1. **System Administrator:**
+   * czorrilla@sicra.do 
+   * dcaraballo@sicra.do     
+   * yrodriguez@sicra.do
+   * fcharles@sicra.do
+   * amontero@sicra.do
+   * jburgos@sicra.do
+   * mcarrasco@sicra.do
+   contraseñas: `AdminSecure2026!` para todos esos de arriba
    * Email: `admin@sicra.do`
    * Password: Hash of `AdminSecure2026!` (using Passlib / Bcrypt)
    * Role: `ADMIN`
@@ -98,7 +107,7 @@ For each business seeded above:
 
 1. Execute `python -m src.database.seed --reset`.
 2. Run database verification queries:
-   * Assert exactly 10 businesses are created.
-   * Assert all 10 businesses have linked active containers with correct capacity tiers (100L, 50L, 20L).
+   * Assert exactly 11 businesses are created.
+   * Assert all 11 businesses have linked active containers with correct capacity tiers (100L, 50L, 20L).
    * Assert all coordinates are within the geographic bounding box of San Pedro de Macorís ($\text{lat} \in [18.40, 18.50]$, $\text{lon} \in [-69.35, -69.25]$).
    * Verify password hashes with bcrypt verification.

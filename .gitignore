@@ -21,6 +21,12 @@ ENV/
 node_modules/
 dist/
 
+# Database files and local caches
+data/
+*.db
+*.sqlite3
+.pytest_cache/
+
 # OS / Editor specific files
 .DS_Store
 Thumbs.db

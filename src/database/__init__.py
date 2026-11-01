@@ -1,5 +1,8 @@
-"""Database configuration, engine factory, and session helpers."""
+"""Database configuration, engine factory, migration, security, and session helpers."""
 
+from src.database.init_db import initialize_database
+from src.database.security import hash_password, verify_password
+from src.database.seed import seed_database
 from src.database.session import (
     DEFAULT_DATABASE_URL,
     SessionLocal,
@@ -22,4 +25,8 @@ __all__ = [
     "get_db_context",
     "init_db",
     "reset_db",
+    "initialize_database",
+    "hash_password",
+    "verify_password",
+    "seed_database",
 ]
