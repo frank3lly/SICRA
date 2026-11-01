@@ -5,9 +5,10 @@ import math
 from typing import Any, Dict, List, Optional
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy.orm.attributes import flag_modified
 
 from src.models.entities import Alert, Business, CollectionRoute, Container
-from src.models.enums import AlertType, RouteStatus
+from src.models.enums import AlertType, ContainerStatus, RouteStatus
 
 EARTH_RADIUS_KM = 6371.0
 
@@ -190,10 +191,11 @@ class RoutingService:
                 "longitude": stop["longitude"],
                 "address": stop.get("address", ""),
                 "estimated_liters": round(liters, 2),
+                "fill_percentage": round(float(stop.get("fill_percentage", 80.0)), 1),
                 "cumulative_distance_km": round(cumulative_distance, 2),
                 "is_depot": stop.get("is_depot", False),
-                "visited": False,
-                "visited_at": None,
+                "visited": stop.get("visited", False),
+                "visited_at": stop.get("visited_at", None),
             }
             final_itinerary.append(stop_entry)
 
@@ -241,10 +243,35 @@ class RoutingService:
                     "longitude": business.longitude,
                     "address": business.address,
                     "estimated_liters": container.current_volume_liters,
+                    "fill_percentage": round(container.current_fill_percentage or 80.0, 1),
                     "is_depot": False,
                 }
             else:
                 stops_by_biz[business.id]["estimated_liters"] += container.current_volume_liters
+
+        # Fallback to high-fill containers if no alert records exist yet
+        if not stops_by_biz:
+            high_fill_containers = (
+                db.query(Business, Container)
+                .join(Container, Business.id == Container.business_id)
+                .filter(
+                    Container.status == ContainerStatus.ACTIVE,
+                    Container.current_fill_percentage >= 70.0,
+                )
+                .all()
+            )
+            for business, container in high_fill_containers:
+                if business.id not in stops_by_biz:
+                    stops_by_biz[business.id] = {
+                        "business_id": str(business.id),
+                        "business_name": business.name,
+                        "latitude": business.latitude,
+                        "longitude": business.longitude,
+                        "address": business.address,
+                        "estimated_liters": container.current_volume_liters,
+                        "fill_percentage": round(container.current_fill_percentage or 80.0, 1),
+                        "is_depot": False,
+                    }
 
         stops_list = list(stops_by_biz.values())
         optimization_result = cls.optimize_itinerary(stops_list)
@@ -315,6 +342,7 @@ class RoutingService:
         all_visited = all(s.get("visited", False) for s in non_depot_stops)
 
         route.stops_order_json = stops
+        flag_modified(route, "stops_order_json")
         if all_visited and non_depot_stops:
             route.status = RouteStatus.COMPLETED
             route.completed_at = now_utc

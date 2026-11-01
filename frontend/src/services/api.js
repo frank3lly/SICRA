@@ -212,10 +212,76 @@ export async function runFleetForecast() {
   }
 
   const result = await res.json();
-  // Immediately retrieve newly generated predictions
   const predsResult = await fetchLatestPredictions();
   return {
     ...result,
     projections: predsResult.projections
   };
+}
+
+/**
+ * Fetch today's collection route
+ */
+export async function fetchTodayRoute() {
+  try {
+    const token = await getAuthToken();
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+    const res = await fetch(`${API_BASE}/api/v1/routes/today`, { headers });
+    if (res.status === 404) {
+      return { connected: true, route: null };
+    }
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    }
+    const data = await res.json();
+    return { connected: true, route: data };
+  } catch (err) {
+    console.error('Failed to fetch today route:', err.message);
+    return { connected: false, route: null, error: err.message };
+  }
+}
+
+/**
+ * Generate optimized collection route for today
+ */
+export async function generateTodayRoute() {
+  const token = await getAuthToken();
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {})
+  };
+
+  const res = await fetch(`${API_BASE}/api/v1/routes/generate-today`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({})
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to generate route: HTTP ${res.status}`);
+  }
+  return await res.json();
+}
+
+/**
+ * Confirm pickup stop and reset container tare
+ */
+export async function confirmRouteStop(routeId, businessId) {
+  const token = await getAuthToken();
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {})
+  };
+
+  const res = await fetch(`${API_BASE}/api/v1/routes/${routeId}/confirm-stop/${businessId}`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({})
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to confirm stop: HTTP ${res.status}`);
+  }
+  return await res.json();
 }

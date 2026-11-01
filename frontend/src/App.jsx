@@ -1,17 +1,13 @@
 import React, { useState } from 'react';
 import Header from './components/layout/Header';
 import { AdminDashboard, ForecastCenter } from './components/admin';
+import { CollectorDashboard } from './components/collector';
 import {
-  Button,
   Card,
   StatWidget,
-  BellIcon,
   ShieldIcon,
   ClockIcon,
   BatteryIcon,
-  RouteIcon,
-  DownloadIcon,
-  ExpandIcon,
   TruckIcon
 } from './components/common';
 
@@ -48,59 +44,7 @@ export function App() {
         )}
 
         {role === 'col' && (
-          <section id="col">
-            <div className="row sp" style={{ alignItems: 'flex-end' }}>
-              <div>
-                <h1>Ruta de hoy</h1>
-              </div>
-              <div className="row">
-                <Button icon={<DownloadIcon />}>
-                  Exportar ruta
-                </Button>
-                <Button variant="p" icon={<RouteIcon />}>
-                  Generar ruta de hoy
-                </Button>
-              </div>
-            </div>
-
-            <div className="grid g2" style={{ margin: '32px 0 16px' }}>
-              <Card style={{ padding: '12px' }}>
-                <div className="mapbox">
-                  <Button className="xp" icon={<ExpandIcon />}>
-                    Expandir
-                  </Button>
-                  <div
-                    className="map"
-                    style={{
-                      height: '300px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}
-                  >
-                    <span className="sm mut">
-                      Mapa Leaflet interactivo listo para despacho cartográfico
-                    </span>
-                  </div>
-                </div>
-                <div className="row sp sm mut" style={{ padding: '12px 8px 4px' }}>
-                  <span>14,8 km en total</span>
-                  <span>285 L estimados</span>
-                  <span>5 paradas</span>
-                </div>
-              </Card>
-
-              <Card>
-                <h2>Paradas Programadas</h2>
-                <div style={{ marginTop: '14px' }}>
-                  <div className="note" style={{ background: 'var(--nt)' }}>
-                    <BellIcon />
-                    <span>Alertas activas: <b>3</b> contenedores sobre el 80%</span>
-                  </div>
-                </div>
-              </Card>
-            </div>
-          </section>
+          <CollectorDashboard />
         )}
 
         {role === 'biz' && (
