@@ -2,6 +2,7 @@
 
 from src.ml.base import BasePredictor
 from src.ml.baselines import SeasonalNaivePredictor
+from src.ml.ensemble_models import TreeEnsemblePredictor
 from src.ml.linear_models import GLMPredictor, RegularizedLinearPredictor
 from src.ml.preprocessor import FeaturePipeline
 from src.ml.rate_estimator import LoadCellRateEstimator
@@ -13,4 +14,5 @@ __all__ = [
     "FeaturePipeline",
     "RegularizedLinearPredictor",
     "GLMPredictor",
+    "TreeEnsemblePredictor",
 ]
