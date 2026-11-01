@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Button } from '../common';
 import { createBusiness } from '../../services/api';
 
@@ -39,6 +40,16 @@ export function AddBusinessModal({ isOpen, onClose, onSuccess }) {
     }
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
+
+  // Lock body scroll while modal is active
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = '';
+      };
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -91,7 +102,7 @@ export function AddBusinessModal({ isOpen, onClose, onSuccess }) {
     }
   };
 
-  return (
+  return createPortal(
     <div
       className="modal-backdrop"
       onClick={(e) => {
@@ -299,7 +310,8 @@ export function AddBusinessModal({ isOpen, onClose, onSuccess }) {
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

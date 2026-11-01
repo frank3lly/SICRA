@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { Button, CheckIcon, SparkIcon } from '../common';
 import { createUser, fetchBusinesses } from '../../services/api';
 
@@ -105,6 +106,16 @@ export function CreateUserModal({ isOpen, onClose, onSuccess }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, submitting]);
 
+  // Lock body scroll while modal is active
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = '';
+      };
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const handleClose = () => {
@@ -173,7 +184,7 @@ export function CreateUserModal({ isOpen, onClose, onSuccess }) {
     }
   };
 
-  return (
+  return createPortal(
     <div
       className="modal-backdrop"
       onClick={(e) => {
@@ -185,15 +196,7 @@ export function CreateUserModal({ isOpen, onClose, onSuccess }) {
       aria-modal="true"
       aria-labelledby="user-modal-title"
     >
-      <div
-        className="modal-card"
-        style={{
-          maxWidth: '500px',
-          background: 'var(--card)',
-          borderRadius: '14px',
-          padding: '28px 24px'
-        }}
-      >
+      <div className="modal-card" style={{ maxWidth: '500px' }}>
         <div style={{ marginBottom: '20px' }}>
           <h2 id="user-modal-title" style={{ margin: '0 0 6px', fontSize: '22px' }}>
             Crear nuevo usuario
@@ -450,7 +453,8 @@ export function CreateUserModal({ isOpen, onClose, onSuccess }) {
           </form>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

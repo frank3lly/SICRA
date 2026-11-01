@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { Button, CheckIcon } from '../common';
 import { fetchBusinesses, createContainer } from '../../services/api';
 
@@ -109,6 +110,16 @@ export function AddContainerModal({ isOpen, onClose, onSuccess }) {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen]);
 
+  // Lock body scroll while modal is active
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = '';
+      };
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const handleClose = () => {
@@ -187,7 +198,7 @@ export function AddContainerModal({ isOpen, onClose, onSuccess }) {
     }
   };
 
-  return (
+  return createPortal(
     <div
       className="modal-backdrop"
       onClick={(e) => {
@@ -534,7 +545,8 @@ export function AddContainerModal({ isOpen, onClose, onSuccess }) {
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
