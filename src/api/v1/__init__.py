@@ -9,9 +9,11 @@ from src.api.v1.predictions import router as predictions_router
 from src.api.v1.routes import router as routes_router
 from src.api.v1.stats import router as stats_router
 from src.api.v1.telemetry import router as telemetry_router
+from src.api.v1.users import router as users_router
 
 api_v1_router = APIRouter(prefix="/api/v1")
 api_v1_router.include_router(auth_router, prefix="/auth", tags=["Authentication & RBAC"])
+api_v1_router.include_router(users_router, prefix="/users", tags=["User Management"])
 api_v1_router.include_router(telemetry_router, prefix="/telemetry", tags=["Telemetry Ingestion & Sensors"])
 api_v1_router.include_router(businesses_router, prefix="/businesses", tags=["Food Businesses"])
 api_v1_router.include_router(containers_router, prefix="/containers", tags=["Smart Containers"])

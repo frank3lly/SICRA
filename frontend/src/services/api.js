@@ -472,5 +472,55 @@ export async function createContainer(payload) {
   return data;
 }
 
+/**
+ * Create a new user account (Admin only)
+ */
+export async function createUser(payload) {
+  const token = getAuthToken();
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {})
+  };
+
+  const res = await fetch(`${API_BASE}/api/v1/users/`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(payload)
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    let msg = 'Error al crear el usuario';
+    if (data?.detail) {
+      if (typeof data.detail === 'string') {
+        msg = data.detail;
+      } else if (Array.isArray(data.detail)) {
+        msg = data.detail.map((d) => d.msg || `${d.loc?.join('.')}: error`).join(', ');
+      }
+    }
+    throw new Error(msg);
+  }
+  return data;
+}
+
+/**
+ * Retrieve list of registered users (Admin only)
+ */
+export async function fetchUsers({ role = '', search = '' } = {}) {
+  const token = getAuthToken();
+  const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+  const params = new URLSearchParams();
+  if (role) params.set('role', role);
+  if (search && search.trim()) params.set('search', search.trim());
+
+  const qs = params.toString() ? `?${params.toString()}` : '';
+  const res = await fetch(`${API_BASE}/api/v1/users/${qs}`, { headers });
+  if (!res.ok) {
+    throw new Error(`Error al consultar usuarios: HTTP ${res.status}`);
+  }
+  return await res.json();
+}
+
 
 

@@ -14,6 +14,7 @@ import { FleetTable } from './FleetTable';
 import { ComplianceCard } from './ComplianceCard';
 import { AddBusinessModal } from './AddBusinessModal';
 import { AddContainerModal } from './AddContainerModal';
+import { CreateUserModal } from './CreateUserModal';
 import {
   fetchEnvironmentalStats,
   fetchContainers,
@@ -34,7 +35,13 @@ export function AdminDashboard({ onOpenForecast }) {
   const [btnText, setBtnText] = useState('Correr Proyección');
   const [isAddBusinessOpen, setIsAddBusinessOpen] = useState(false);
   const [isAddContainerOpen, setIsAddContainerOpen] = useState(false);
+  const [isCreateUserOpen, setIsCreateUserOpen] = useState(false);
   const [successToast, setSuccessToast] = useState(null);
+
+  const handleUserCreated = (newUser) => {
+    setSuccessToast(`Usuario "${newUser.full_name}" (${newUser.role}) creado exitosamente.`);
+    setTimeout(() => setSuccessToast(null), 4000);
+  };
 
   const handleBusinessAdded = async (newBiz) => {
     setSuccessToast(`Comercio "${newBiz.name}" registrado exitosamente.`);
@@ -169,6 +176,9 @@ export function AdminDashboard({ onOpenForecast }) {
           </Button>
           <Button icon={<PlusIcon />} onClick={() => setIsAddContainerOpen(true)}>
             Agregar contenedor
+          </Button>
+          <Button icon={<PlusIcon />} onClick={() => setIsCreateUserOpen(true)}>
+            Crear usuario
           </Button>
         </div>
       </div>
@@ -309,6 +319,13 @@ export function AdminDashboard({ onOpenForecast }) {
         isOpen={isAddContainerOpen}
         onClose={() => setIsAddContainerOpen(false)}
         onSuccess={handleContainerAdded}
+      />
+
+      {/* Modal for creating and provisioning users */}
+      <CreateUserModal
+        isOpen={isCreateUserOpen}
+        onClose={() => setIsCreateUserOpen(false)}
+        onSuccess={handleUserCreated}
       />
     </section>
   );

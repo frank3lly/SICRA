@@ -5,3 +5,4 @@ export * from './ComplianceCard';
 export * from './ForecastCenter';
 export * from './AddBusinessModal';
 export * from './AddContainerModal';
+export * from './CreateUserModal';

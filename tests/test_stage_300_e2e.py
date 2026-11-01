@@ -229,7 +229,7 @@ def test_full_stage_300_lifecycle_e2e(e2e_client):
     final_stats = resp_stats_final.json()
     assert final_stats["total_oil_diverted_liters"] > initial_oil
     assert final_stats["water_preserved_liters"] > initial_water
-    assert final_stats["compliance_framework"] == "Ley No. 225-20 de Gestion Integral y Coprocesamiento de Residuos"
+    assert final_stats["compliance_framework"] == "Trazabilidad y Recoleccion Certificada"
 
 
 # ==============================================================================
