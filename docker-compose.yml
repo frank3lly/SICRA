@@ -1,0 +1,41 @@
+services:
+  sicra-db:
+    image: postgres:16-alpine
+    container_name: sicra-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: sicradb
+      POSTGRES_USER: sicrauser
+      POSTGRES_PASSWORD: sicrapassword
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sicrauser -d sicradb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  sicra-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sicra-api
+    restart: unless-stopped
+    depends_on:
+      sicra-db:
+        condition: service_healthy
+    environment:
+      PORT: 8000
+      ENVIRONMENT: development
+      DATABASE_URL: postgresql://sicrauser:sicrapassword@sicra-db:5432/sicradb
+      JWT_SECRET_KEY: sicra_local_docker_compose_super_secret_key_2026
+      JWT_ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 1440
+      AUTO_SEED_IF_EMPTY: "true"
+    ports:
+      - "8000:8000"
+
+volumes:
+  postgres_data:

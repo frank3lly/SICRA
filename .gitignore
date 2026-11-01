@@ -2,7 +2,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
-
+desing-reference
 # C / ESP32 build artifacts
 .pio/
 build/
@@ -21,8 +21,20 @@ ENV/
 node_modules/
 dist/
 
+# Database files and local caches
+*.db
+*.sqlite3
+.pytest_cache/
+data/*.db
+data/synthetic/
+!data/processed/
+
 # OS / Editor specific files
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
+
+# Internal documentation and specifications
+docs/
+__specs__/

@@ -1,0 +1,38 @@
+{
+  "total_records": 2200,
+  "train_records": 1760,
+  "test_records": 440,
+  "train_ratio": 0.8,
+  "total_calendar_days": 200,
+  "train_calendar_days": 160,
+  "test_calendar_days": 40,
+  "date_range": {
+    "start": "2026-04-15",
+    "end": "2026-10-31"
+  },
+  "train_date_range": {
+    "start": "2026-04-15",
+    "end": "2026-09-21"
+  },
+  "test_date_range": {
+    "start": "2026-09-22",
+    "end": "2026-10-31"
+  },
+  "mean_daily_liters": 10.82,
+  "businesses_count": 11,
+  "containers_count": 11,
+  "features": [
+    "date",
+    "container_id",
+    "business_id",
+    "business_name",
+    "business_type",
+    "num_fryers",
+    "avg_daily_customers",
+    "day_of_week",
+    "is_weekend",
+    "lag_7d_liters",
+    "daily_liters",
+    "is_synthetic"
+  ]
+}
