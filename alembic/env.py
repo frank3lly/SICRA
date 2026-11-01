@@ -23,6 +23,8 @@ def get_url() -> str:
     """Retrieve database URL from environment or configuration fallback."""
     env_url = os.getenv("DATABASE_URL")
     if env_url:
+        if env_url.startswith("postgres://"):
+            env_url = env_url.replace("postgres://", "postgresql://", 1)
         return env_url
     ini_url = config.get_main_option("sqlalchemy.url")
     return ini_url or DEFAULT_DATABASE_URL

@@ -39,10 +39,18 @@ def get_engine(database_url: Optional[str] = None, **kwargs) -> Engine:
     """Create and return a configured SQLAlchemy engine."""
     url = database_url or os.getenv("DATABASE_URL", DEFAULT_DATABASE_URL)
     
+    # Normalize postgres:// scheme for SQLAlchemy 2.0 (Render / Neon compatibility)
+    if url.startswith("postgres://"):
+        url = url.replace("postgres://", "postgresql://", 1)
+
     connect_args = kwargs.pop("connect_args", {})
     if "sqlite" in url:
         ensure_sqlite_directory(url)
         connect_args.setdefault("check_same_thread", False)
+    elif "postgresql" in url:
+        # Neon Serverless PostgreSQL connection resilience
+        kwargs.setdefault("pool_pre_ping", True)
+        kwargs.setdefault("pool_recycle", 300)
         
     return create_engine(url, connect_args=connect_args, **kwargs)
 

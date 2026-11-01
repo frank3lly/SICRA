@@ -73,7 +73,11 @@ def get_container_prediction(
     business = db.query(Business).filter(Business.id == container.business_id).first()
     engine = get_inference_engine()
 
-    b_type = business.business_type.value if business else "FRITURA"
+    b_type = (
+        business.business_type.value
+        if hasattr(business.business_type, "value")
+        else str(business.business_type)
+    ) if business else "FRITURA"
     fryers = business.num_fryers if business else 2
     customers = business.avg_daily_customers if business else 100
     day_of_week = today.weekday()
