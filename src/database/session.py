@@ -40,7 +40,8 @@ def ensure_sqlite_directory(database_url: str) -> None:
 
 def get_engine(database_url: Optional[str] = None, **kwargs) -> Engine:
     """Create and return a configured SQLAlchemy engine."""
-    url = database_url or os.getenv("DATABASE_URL", DEFAULT_DATABASE_URL)
+    raw_url = database_url or os.getenv("DATABASE_URL", DEFAULT_DATABASE_URL)
+    url = raw_url.strip().strip("'\"").strip()
     
     # Normalize postgres:// and postgresql:// schemes for SQLAlchemy 2.0 (Render / Neon compatibility)
     if url.startswith("postgres://"):
