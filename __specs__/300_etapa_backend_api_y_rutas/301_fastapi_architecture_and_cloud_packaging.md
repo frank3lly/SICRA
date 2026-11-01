@@ -8,50 +8,53 @@
 
 ---
 
-## 1. Cloud Deployment Investigation and Platform Analysis
+## 1. Definitive Cloud Architecture Decision
 
-The user intends to deploy the SICRA backend to a free cloud hosting tier. Below is an engineering evaluation comparing the primary free-tier cloud platforms for hosting a Python 3.12 + FastAPI + Machine Learning stack:
+To ensure high availability, zero maintenance costs, and persistent storage without data loss, the deployment architecture is officially decided as follows:
 
-| Platform | Free Tier Specifications | Pros | Cons & Caveats | Verdict for SICRA |
-| :--- | :--- | :--- | :--- | :--- |
-| **Render** | 512 MB RAM, 0.1 CPU, auto-spins down after 15 min of inactivity. Free PG database expires after 30 days. | Extremely simple Git deployment, native Docker support, free SSL certificates, custom domains. | 50s cold-start on sleep. **Render's Free PostgreSQL deletes the database every 30 days.** | **RECOMMENDED FOR WEB SERVICE** (Paired with Neon/Supabase for persistent DB). |
-| **Koyeb** | 512 MB RAM (Free Nano), 0.1 vCPU. Native Docker. | Stays active without sleeping in primary regions, low latency, fast deployments. | Stricter network egress limits. | **EXCELLENT ALTERNATIVE** for zero-sleep backend hosting. |
-| **Neon / Supabase** | Free Serverless PostgreSQL (500 MB – 1 GB storage, connection pooling). | **Never expires.** Full PostgreSQL 16 compatibility, perfect for SQLAlchemy. | Only provides the database, not web app hosting. | **RECOMMENDED FOR PRODUCTION DB**. |
-| **Railway** | No ongoing 100% free tier (trial credit only). | Excellent developer experience. | Requires credit card; service terminates once trial credits deplete. | **NOT RECOMMENDED** for free-tier requirement. |
-| **Fly.io** | Limited free allowance. | Global edge deployment. | Requires credit card on file during onboarding. | **NOT RECOMMENDED** for frictionless free deployment. |
+```
+                      SICRA 100% FREE PRODUCTION TOPOLOGY
 
-### The Optimal Free-Tier Architecture Recommendation:
-1. **Application Layer (FastAPI Backend):** Deploy to **Render Free Web Service** using our multi-stage `Dockerfile` and a `render.yaml` Infrastructure-as-Code blueprint.
-2. **Persistence Layer (Database):**
-   * *Option A (Default Zero-Config):* SQLite file storage (`sicra.db`) with automatic database initialization and seeding on container boot (ideal for immediate testing and grading/demonstration).
-   * *Option B (Persistent Production):* Free serverless PostgreSQL hosted on **Neon.tech** or **Supabase** linked via the `DATABASE_URL` environment variable to prevent Render's 30-day database wipe.
-3. **Memory Optimization:** Scikit-learn and NumPy can consume significant memory during import. The application must optimize its memory footprint to comfortably fit within Render's **512 MB RAM boundary** (e.g., loading model weights lazily on demand, using lightweight uvicorn worker counts, and utilizing `python:3.12-slim`).
+    ┌─────────────────────────────────┐
+    │   ESP32 IoT Physical Nodes      │
+    └────────────────┬────────────────┘
+                     │ HTTPS Telemetry (POST /api/v1/telemetry/ingest)
+                     ▼
+    ┌─────────────────────────────────────────────────────────────────┐
+    │  RENDER WEB SERVICE (Backend API & ML Engine)                   │
+    │  - Multi-stage Docker container (python:3.12-slim)              │
+    │  - FastAPI ASGI application (Uvicorn single worker)             │
+    │  - IoT Ingest, 80% Capacity Alert Service, 2-Opt Route Engine   │
+    │  - Lazy-loaded ML Inference Engine (< 512 MB RAM footprint)     │
+    └───────────────┬─────────────────────────────────▲───────────────┘
+                    │                                 │
+     SQLAlchemy     │ SSL Connection                  │ HTTPS REST API
+     Connection     │ Pool                            │ (JWT Auth / RBAC)
+                    ▼                                 │
+    ┌─────────────────────────────────┐   ┌───────────┴─────────────────┐
+    │  NEON SERVERLESS POSTGRESQL     │   │  RENDER STATIC SITE         │
+    │  (Database Layer)               │   │  (Frontend Web Dashboard)   │
+    │  - PostgreSQL 16 Managed DB     │   │  - Single Page App (SPA)    │
+    │  - Perpetual Free Tier (No Wipe)│   │  - Global CDN Distribution  │
+    │  - Stores all entities & logs   │   │  - ZERO sleep / Instant load│
+    └─────────────────────────────────┘   └─────────────────────────────┘
+```
+
+### Official Role of Each Platform Component:
+
+1. **Database Layer $\to$ Neon Serverless PostgreSQL (`neon.tech`):**
+   * **Role:** Stores all persistent relational data (`businesses`, `containers`, `telemetries`, `predictions`, `alerts`, `routes`, `users`).
+   * **Why Neon:** Render's free PostgreSQL tier automatically wipes and deletes all data every 30 days. Neon provides a **perpetual free PostgreSQL tier** that **never expires**, with automated connection pooling and 0.5 GB storage (enough for hundreds of thousands of telemetry rows).
+2. **Backend API Layer $\to$ Render Web Service (Docker):**
+   * **Role:** Runs the Python 3.12 FastAPI backend, telemetry ingestion endpoint, 80% alerting engine, 2-opt vehicle route optimizer, and ML model inference.
+   * **Configuration:** Built automatically from our multi-stage `Dockerfile`. Connects securely to Neon via the `DATABASE_URL` environment variable.
+3. **Frontend Dashboard $\to$ Render Static Site:**
+   * **Role:** Delivers the Stage 400 interactive web interface (Fleet map, collector routes, business owner gauges).
+   * **Why Render Static Site:** Static sites on Render are 100% free and distributed over a global CDN. Unlike web services, **static sites never sleep and have zero cold starts**, providing instant page loading.
 
 ---
 
-## 2. Containerization and Cloud Deployment Blueprint
-
-```
-                     FREE-TIER CLOUD DEPLOYMENT TOPOLOGY
-                     
-      [ ESP32 IoT Nodes ]         [ Web Browser / Mobile ]
-               │                              │
-               │ HTTPS Telemetry              │ HTTPS Dashboard
-               ▼                              ▼
-  ┌────────────────────────────────────────────────────────┐
-  │              RENDER / KOYEB WEB SERVICE                │
-  │  Multi-Stage Docker Container (python:3.12-slim)       │
-  │  - FastAPI Application (Uvicorn ASGI)                  │
-  │  - Lazy-loaded ML Inference Engine                     │
-  │  - In-memory Task Workers (BackgroundTasks)            │
-  └──────────────────────────┬─────────────────────────────┘
-                             │
-            ┌────────────────┴────────────────┐
-            ▼                                 ▼
-   [ Option A: SQLite ]             [ Option B: Neon / Supabase ]
-   Local file inside container       Free Persistent Serverless PostgreSQL
-   (Auto-seeds on startup)          (Via DATABASE_URL environment variable)
-```
+## 2. Containerization and Render Deployment Blueprint
 
 ### 2.1. Multi-Stage Dockerfile (`Dockerfile`)
 
@@ -86,8 +89,8 @@ COPY data/ /app/data/
 COPY alembic/ /app/alembic/
 COPY alembic.ini /app/alembic.ini
 
-# Create storage directory and grant permissions
-RUN mkdir -p /app/data && chown -R sicrauser:sicragroup /app
+# Grant execution permissions
+RUN chown -R sicrauser:sicragroup /app
 
 USER sicrauser
 
@@ -106,6 +109,7 @@ CMD uvicorn src.main:app --host 0.0.0.0 --port ${PORT} --workers 1
 
 ```yaml
 services:
+  # 1. Backend Web Service (FastAPI + ML Engine)
   - type: web
     name: sicra-api
     env: docker
@@ -117,7 +121,7 @@ services:
       - key: ENVIRONMENT
         value: production
       - key: DATABASE_URL
-        value: sqlite:////app/data/sicra.db # Or paste your free Neon/Supabase PostgreSQL connection string
+        sync: false # User pastes their free Neon PostgreSQL connection string here
       - key: JWT_SECRET_KEY
         generateValue: true
       - key: JWT_ALGORITHM
@@ -126,6 +130,21 @@ services:
         value: 1440
       - key: AUTO_SEED_IF_EMPTY
         value: "true"
+
+  # 2. Frontend Web Application (Dashboard & Map)
+  - type: static
+    name: sicra-web
+    env: static
+    plan: free
+    region: ohio
+    buildCommand: npm install && npm run build # Or static build command
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: sicra-api
+          property: host
 ```
 
 ---
