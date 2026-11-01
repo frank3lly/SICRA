@@ -23,10 +23,12 @@ seaborn>=0.13.0
 fastapi>=0.109.0
 uvicorn[standard]>=0.27.0
 python-multipart>=0.0.9
+python-dotenv>=1.0.1
 passlib[bcrypt]>=1.7.4
 bcrypt>=4.0.1
 python-jose[cryptography]>=3.3.0
 httpx>=0.26.0
+reportlab>=4.1.0
 
 # Testing & Quality Assurance
 pytest>=8.0.0
