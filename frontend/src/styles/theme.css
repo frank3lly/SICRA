@@ -598,8 +598,15 @@ td {
   background: var(--nt);
 }
 
+.header-user-text {
+  text-align: right;
+}
+
 /* Responsive Breakpoints */
 @media (max-width: 820px) {
+  .header-user-text {
+    display: none;
+  }
   header {
     padding: 14px 18px;
   }

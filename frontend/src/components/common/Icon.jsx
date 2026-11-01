@@ -72,6 +72,13 @@ const icons = {
   ),
   cloud: (
     <path d="M7 18a4 4 0 0 1-.5-8A6 6 0 0 1 18 11a3.500 3.500 0 0 1-.5 7z" />
+  ),
+  logout: (
+    <>
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" y1="12" x2="9" y2="12" />
+    </>
   )
 };
 
@@ -106,5 +113,6 @@ export const SparkIcon = (props) => <Icon name="spark" {...props} />;
 export const ClockIcon = (props) => <Icon name="clock" {...props} />;
 export const BatteryIcon = (props) => <Icon name="batt" {...props} />;
 export const CloudIcon = (props) => <Icon name="cloud" {...props} />;
+export const LogoutIcon = (props) => <Icon name="logout" {...props} />;
 
 export default Icon;

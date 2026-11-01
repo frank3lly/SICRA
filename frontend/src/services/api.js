@@ -5,42 +5,124 @@
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
-let cachedToken = null;
+let cachedToken = typeof window !== 'undefined' ? localStorage.getItem('sicra_token') : null;
+let cachedUser = null;
+
+try {
+  const storedUser = typeof window !== 'undefined' ? localStorage.getItem('sicra_user') : null;
+  if (storedUser) {
+    cachedUser = JSON.parse(storedUser);
+  }
+} catch (e) {
+  // ignore json parse error
+}
 
 /**
- * Obtain or renew Bearer authentication token
+ * Obtain Bearer authentication token
  */
-export async function getAuthToken() {
+export function getAuthToken() {
   if (cachedToken) return cachedToken;
-
-  const stored = typeof window !== 'undefined' ? localStorage.getItem('sicra_token') : null;
-  if (stored) {
-    cachedToken = stored;
-    return cachedToken;
+  if (typeof window !== 'undefined') {
+    cachedToken = localStorage.getItem('sicra_token');
   }
+  return cachedToken;
+}
 
+/**
+ * Retrieve cached user profile
+ */
+export function getStoredUser() {
+  if (cachedUser) return cachedUser;
+  if (typeof window !== 'undefined') {
+    try {
+      const u = localStorage.getItem('sicra_user');
+      if (u) {
+        cachedUser = JSON.parse(u);
+      }
+    } catch (e) {}
+  }
+  return cachedUser;
+}
+
+/**
+ * Authenticate with real API credentials
+ */
+export async function loginUser(email, password) {
   try {
     const res = await fetch(`${API_BASE}/api/v1/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: 'admin@sicra.do',
-        password: 'AdminSecure2026!'
-      })
+      body: JSON.stringify({ email: email.trim().toLowerCase(), password })
     });
 
-    if (res.ok) {
-      const data = await res.json();
-      cachedToken = data.access_token;
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('sicra_token', cachedToken);
-      }
-      return cachedToken;
+    const data = await res.json();
+    if (!res.ok) {
+      return {
+        success: false,
+        error: data.detail || 'Credenciales incorrectas. Verifique su correo y contraseña.'
+      };
     }
+
+    cachedToken = data.access_token;
+    cachedUser = data.user;
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('sicra_token', cachedToken);
+      localStorage.setItem('sicra_user', JSON.stringify(cachedUser));
+    }
+
+    return {
+      success: true,
+      user: data.user,
+      token: data.access_token
+    };
   } catch (err) {
-    console.warn('Authentication attempt failed:', err.message);
+    return {
+      success: false,
+      error: 'Error de conexión con el servidor de autenticación.'
+    };
   }
-  return null;
+}
+
+/**
+ * Terminate current user session
+ */
+export function logoutUser() {
+  cachedToken = null;
+  cachedUser = null;
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('sicra_token');
+    localStorage.removeItem('sicra_user');
+  }
+}
+
+/**
+ * Verify session validity against backend
+ */
+export async function verifySession() {
+  const token = getAuthToken();
+  if (!token) return { authenticated: false, user: null };
+
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok) {
+      logoutUser();
+      return { authenticated: false, user: null };
+    }
+    const user = await res.json();
+    cachedUser = user;
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('sicra_user', JSON.stringify(user));
+    }
+    return { authenticated: true, user };
+  } catch (err) {
+    const storedUser = getStoredUser();
+    if (storedUser) {
+      return { authenticated: true, user: storedUser };
+    }
+    return { authenticated: false, user: null };
+  }
 }
 
 /**
