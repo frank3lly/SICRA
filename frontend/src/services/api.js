@@ -146,7 +146,7 @@ export async function fetchEnvironmentalStats() {
       total_collections_count: data.total_collections_count ?? 0,
       active_alerts_count: 0,
       active_containers_count: data.active_containers_count ?? 0,
-      compliance_framework: data.compliance_framework ?? 'Ley No. 225-20'
+      compliance_framework: data.compliance_framework ?? 'Trazabilidad Verificada'
     };
   } catch (err) {
     console.error('Failed to fetch environmental stats from server:', err.message);

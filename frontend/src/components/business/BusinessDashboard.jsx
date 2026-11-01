@@ -7,7 +7,7 @@ import { fetchMyContainer } from '../../services/api';
 /**
  * Business Owner Portal Component
  * Equips kitchen managers and food establishment operators with real-time oil levels,
- * sensor diagnostics, and statutory collection proof under Ley 225-20.
+ * sensor diagnostics, and verified collection custody receipts.
  */
 export function BusinessDashboard() {
   const [containerData, setContainerData] = useState(null);

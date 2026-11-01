@@ -77,5 +77,5 @@ class StatsService:
             "co2_avoided_kg": co2_avoided,
             "total_collections_count": total_collections,
             "active_containers_count": active_containers_count,
-            "compliance_framework": "Ley No. 225-20 de Gestion Integral y Coprocesamiento de Residuos",
+            "compliance_framework": "Trazabilidad y Recoleccion Certificada",
         }

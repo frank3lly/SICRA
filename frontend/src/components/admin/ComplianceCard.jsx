@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, Chip, Button, LeafIcon, ShieldIcon } from '../common';
 
 /**
- * Compliance with Dominican Solid Waste Law 225-20 Card
+ * Environmental Traceability & Compliance Card
  * @param {number|null} waterPreservedLiters - Total potable water preserved in liters
  * @param {number|null} oilDivertedLiters - Total cooking oil diverted in liters
  * @param {number|null} co2AvoidedKg - Total CO2 equivalent avoided in kg
@@ -24,21 +24,21 @@ export function ComplianceCard({
     }
 
     const reportContent = [
-      'REPORTE DE AUDITORÍA Y CUMPLIMIENTO AMBIENTAL - SICRA',
-      'Marco Legal: Ley No. 225-20 de Gestión Integral y Coprocesamiento de Residuos',
+      'REPORTE DE AUDITORÍA Y TRAZABILIDAD AMBIENTAL - SICRA',
+      'Marco: Gestión Integral y Trazabilidad Certificada de Residuos',
       `Fecha de Emisión: ${new Date().toLocaleDateString('es-DO')}`,
       '------------------------------------------------------------',
       `Aceite Vegetal Usado Desviado: ${Number(oilDivertedLiters || 0).toLocaleString('es-DO')} Litros`,
       `Agua Potable Preservada: ${formattedWater} Litros (Factor: 1 L aceite = 1,000 L agua)`,
       `Emisiones de CO2 Evitadas: ${Number(co2AvoidedKg || 0).toLocaleString('es-DO')} kg CO2e`,
-      'Estado: Conforme con la normativa ambiental dominicana'
+      'Estado: Conforme con los estándares de trazabilidad y recolección'
     ].join('\n');
 
     const blob = new Blob([reportContent], { type: 'text/plain;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `reporte_cumplimiento_ley_225_20_${new Date().toISOString().slice(0, 10)}.txt`);
+    link.setAttribute('download', `reporte_auditoria_ambiental_${new Date().toISOString().slice(0, 10)}.txt`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -49,7 +49,7 @@ export function ComplianceCard({
     <Card className={className} {...props}>
       <h2>Cumplimiento</h2>
       <span className="chip" style={{ display: 'inline-block', margin: '10px 0 18px' }}>
-        Ley 225-20
+        Trazabilidad Verificada
       </span>
       <div className="note">
         <LeafIcon />

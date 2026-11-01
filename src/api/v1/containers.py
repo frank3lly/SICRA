@@ -124,7 +124,7 @@ def _get_container_pickups(container_id: Any, db: Session, limit: int = 10) -> L
             "collector_agency": agency,
             "liters": transferred,
             "verified": True,
-            "framework": "Ley No. 225-20",
+            "framework": "Trazabilidad Verificada",
         })
     return history
 

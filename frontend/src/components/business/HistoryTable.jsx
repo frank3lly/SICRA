@@ -3,7 +3,7 @@ import { Card, ShieldIcon } from '../common';
 
 /**
  * Historical Pickups Custody Table
- * Displays authorized collector agencies and volume receipts under Ley 225-20
+ * Displays verified collection events and custody receipts
  *
  * @param {Array<object>} pickups - Array of collection events: [{ date, collector_agency, liters }]
  */
@@ -52,7 +52,7 @@ export function HistoryTable({ pickups = [] }) {
 
       <div className="note" style={{ marginTop: '16px' }}>
         <ShieldIcon />
-        <span>Recolecciones verificadas · Ley 225-20</span>
+        <span>Recolecciones y pesajes verificados</span>
       </div>
     </>
   );

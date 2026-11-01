@@ -60,7 +60,7 @@ export function LoginView({ onLoginSuccess }) {
           />
           <h1 style={{ fontSize: '24px', margin: '0 0 6px' }}>Iniciar Sesión</h1>
           <div className="sm mut" style={{ fontSize: '13px', lineHeight: 1.4 }}>
-            Plataforma de Trazabilidad y Recolección de Aceite Usado · Ley 225-20
+            Plataforma de Trazabilidad y Recolección de Aceite Usado
           </div>
         </div>
 
