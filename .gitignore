@@ -34,3 +34,7 @@ data/synthetic/
 Thumbs.db
 .vscode/
 .idea/
+
+# Internal documentation and specifications
+docs/
+__specs__/
