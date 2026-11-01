@@ -1,170 +1,29 @@
 import React, { useState } from 'react';
 import Header from './components/layout/Header';
+import { AdminDashboard } from './components/admin';
 import {
   Button,
   Card,
   StatWidget,
-  ProgressBar,
-  Chip,
-  SegmentedControl,
-  DropIcon,
-  CloudIcon,
-  TruckIcon,
   BellIcon,
-  SparkIcon,
-  PlusIcon,
   ShieldIcon,
-  LeafIcon,
   ClockIcon,
   BatteryIcon,
   RouteIcon,
   DownloadIcon,
-  ExpandIcon
+  ExpandIcon,
+  TruckIcon
 } from './components/common';
 
 export function App() {
   const [role, setRole] = useState('admin');
-  const [metricMode, setMetricMode] = useState('l');
 
   return (
     <div className="app">
       <Header role={role} setRole={setRole} />
 
       <main>
-        {role === 'admin' && (
-          <section id="admin">
-            <div className="row sp" style={{ alignItems: 'flex-end' }}>
-              <div>
-                <h1>Panorama de la flota</h1>
-              </div>
-              <div className="row">
-                <Button icon={<SparkIcon />}>
-                  <span>Ejecutar proyección</span>
-                </Button>
-                <Button variant="p" icon={<PlusIcon />}>
-                  Nuevo comercio
-                </Button>
-              </div>
-            </div>
-
-            <div className="grid g4" style={{ margin: '32px 0 16px' }}>
-              <StatWidget
-                icon={<DropIcon />}
-                label="Aceite desviado"
-                value="14.250 L"
-              />
-              <StatWidget
-                icon={<CloudIcon />}
-                label="CO₂ evitado"
-                value="40.612 kg"
-              />
-              <StatWidget
-                icon={<TruckIcon />}
-                label="Recolecciones"
-                value="312"
-              />
-              <StatWidget
-                icon={<BellIcon />}
-                label="Alertas activas"
-                value="3"
-              />
-            </div>
-
-            <div className="grid g2" style={{ marginTop: '16px' }}>
-              <Card>
-                <div className="row sp" style={{ marginBottom: '14px' }}>
-                  <h2>Contenedores en Monitoreo</h2>
-                  <span className="sm mut">5 activos</span>
-                </div>
-                <div className="scroll">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Comercio</th>
-                        <th>Llenado</th>
-                        <th>Batería</th>
-                        <th>Estado</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td>Pica Pollo Expreso</td>
-                        <td>
-                          <div className="row">
-                            <ProgressBar value={83} />
-                            <span>83%</span>
-                          </div>
-                        </td>
-                        <td>69%</td>
-                        <td><Chip variant="w">Casi lleno</Chip></td>
-                      </tr>
-                      <tr>
-                        <td>Frituras Doña Ana</td>
-                        <td>
-                          <div className="row">
-                            <ProgressBar value={96} />
-                            <span>96%</span>
-                          </div>
-                        </td>
-                        <td>54%</td>
-                        <td><Chip variant="c">Crítico</Chip></td>
-                      </tr>
-                      <tr>
-                        <td>Cafetería Central</td>
-                        <td>
-                          <div className="row">
-                            <ProgressBar value={41} />
-                            <span>41%</span>
-                          </div>
-                        </td>
-                        <td>88%</td>
-                        <td><Chip>Normal</Chip></td>
-                      </tr>
-                      <tr>
-                        <td>Comedor Los Pinos</td>
-                        <td>
-                          <div className="row">
-                            <ProgressBar value={22} />
-                            <span>22%</span>
-                          </div>
-                        </td>
-                        <td>91%</td>
-                        <td><Chip>Normal</Chip></td>
-                      </tr>
-                      <tr>
-                        <td>Restaurante El Muelle</td>
-                        <td>
-                          <div className="row">
-                            <ProgressBar value={80} />
-                            <span>80%</span>
-                          </div>
-                        </td>
-                        <td>18%</td>
-                        <td><Chip variant="w">Batería baja</Chip></td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </Card>
-
-              <Card>
-                <h2>Cumplimiento Ambiental</h2>
-                <div style={{ margin: '10px 0 18px' }}>
-                  <Chip>Ley 225-20</Chip>
-                </div>
-                <div className="note">
-                  <LeafIcon />
-                  <span>14.250.000 L de agua preservados por el aceite que no llegó al drenaje.</span>
-                </div>
-                <div style={{ marginTop: '18px' }}>
-                  <Button variant="n" icon={<ShieldIcon />}>
-                    Descargar reporte
-                  </Button>
-                </div>
-              </Card>
-            </div>
-          </section>
-        )}
+        {role === 'admin' && <AdminDashboard />}
 
         {role === 'col' && (
           <section id="col">
@@ -188,8 +47,18 @@ export function App() {
                   <Button className="xp" icon={<ExpandIcon />}>
                     Expandir
                   </Button>
-                  <div className="map" style={{ height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <span className="sm mut">Mapa Leaflet interactivo listo para despacho cartográfico</span>
+                  <div
+                    className="map"
+                    style={{
+                      height: '300px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    <span className="sm mut">
+                      Mapa Leaflet interactivo listo para despacho cartográfico
+                    </span>
                   </div>
                 </div>
                 <div className="row sp sm mut" style={{ padding: '12px 8px 4px' }}>
