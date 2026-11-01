@@ -6,6 +6,7 @@
 # Core Database, ORM & Migrations (Stage 100)
 SQLAlchemy>=2.0.25
 alembic>=1.13.1
+psycopg2-binary>=2.9.9
 pydantic>=2.6.0
 pydantic-settings>=2.1.0
 
