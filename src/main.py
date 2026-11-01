@@ -5,6 +5,7 @@ import logging
 import os
 import threading
 from typing import AsyncGenerator
+from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -16,6 +17,8 @@ from src.database.seed import seed_database
 from src.database.session import get_db, get_db_context, init_db
 from src.ml.inference import InferenceEngine
 from src.models.entities import Business
+
+load_dotenv()
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("sicra.main")
