@@ -107,11 +107,13 @@ header {
   gap: 12px;
 }
 
+.brand-logo-svg,
 .brand-logo-img {
   width: 40px;
   height: 40px;
-  border-radius: 8px;
-  object-fit: cover;
+  object-fit: contain;
+  flex-shrink: 0;
+  display: block;
 }
 
 .brand b {
@@ -240,18 +242,22 @@ button:focus-visible {
 .chip {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
   font-size: 12px;
   font-weight: 500;
-  padding: 3px 10px;
+  line-height: 1.35;
+  padding: 4px 11px;
   border-radius: 999px;
   background: var(--gt);
   color: var(--g);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .chip.w {
-  background: color-mix(in srgb, var(--yel) 20%, var(--card));
-  color: color-mix(in srgb, var(--yel) 55%, var(--ink));
+  background: color-mix(in srgb, var(--yel) 22%, var(--card));
+  color: color-mix(in srgb, var(--yel) 65%, var(--ink));
 }
 
 .chip.c {
@@ -616,3 +622,160 @@ td {
     font-size: 28px;
   }
 }
+
+/* Ambient Brand Watermark Background Elements */
+.app {
+  position: relative;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.brand-watermark-drop {
+  position: fixed;
+  right: -50px;
+  bottom: -40px;
+  width: 520px;
+  height: 560px;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.045;
+  background-image: url('/assets/sicra-drop-smart.svg');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  transition: opacity 0.4s ease;
+}
+
+.brand-watermark-recycle {
+  position: fixed;
+  left: -80px;
+  top: 15%;
+  width: 380px;
+  height: 380px;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.025;
+  background-image: url('/assets/sicra-recycle-arrows.svg');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .brand-watermark-drop {
+    opacity: 0.07;
+    filter: brightness(1.2);
+  }
+  :root:not([data-theme="light"]) .brand-watermark-recycle {
+    opacity: 0.045;
+  }
+}
+
+:root[data-theme="dark"] .brand-watermark-drop {
+  opacity: 0.07;
+  filter: brightness(1.2);
+}
+
+:root[data-theme="dark"] .brand-watermark-recycle {
+  opacity: 0.045;
+}
+
+header, main {
+  position: relative;
+  z-index: 1;
+}
+
+/* Responsive Table Improvements for Multi-Business Fleet */
+.fleet-table-card {
+  width: 100%;
+}
+
+.fleet-table-card .scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.fleet-table-card table {
+  width: 100%;
+  min-width: 540px;
+}
+
+.business-name-cell {
+  font-weight: 500;
+  color: var(--ink);
+  max-width: 250px;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+/* Dedicated Forecast Center View Styles */
+.forecast-page {
+  animation: fadeIn 0.25s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.forecast-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 20px 24px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--g) 8%, var(--card));
+  border: 1px solid color-mix(in srgb, var(--g) 25%, transparent);
+  margin-bottom: 24px;
+}
+
+.forecast-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.forecast-matrix-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 760px;
+}
+
+.forecast-matrix-table th {
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mut);
+}
+
+.forecast-matrix-table td {
+  padding: 14px 12px;
+}
+
+.time-to-critical {
+  font-weight: 600;
+  font-family: "Source Serif 4", Georgia, serif;
+  font-size: 15px;
+}
+
+.time-to-critical.urgent {
+  color: var(--red);
+}
+
+.time-to-critical.warning {
+  color: var(--yel);
+}
+
+.time-to-critical.safe {
+  color: var(--g);
+}
+
+@media (max-width: 820px) {
+  .forecast-kpi-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+

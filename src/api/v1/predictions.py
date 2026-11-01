@@ -63,9 +63,20 @@ def get_fleet_predictions(
             results.append({
                 "container_id": str(container.id),
                 "name": business.name,
+                "businessType": (
+                    business.business_type.value
+                    if hasattr(business.business_type, "value")
+                    else str(business.business_type)
+                ),
+                "address": business.address,
+                "city": business.city,
+                "capacityLiters": cap,
+                "currentVolumeLiters": round(current_vol, 1),
                 "dailyLiters": daily_liters,
                 "currentPct": current_pct,
                 "forecastPct": forecast_pct,
+                "hoursTo80": latest_pred.projected_hours_to_80_percent,
+                "modelIdentifier": latest_pred.model_identifier,
                 "calculation_timestamp": latest_pred.calculation_timestamp.isoformat(),
             })
 

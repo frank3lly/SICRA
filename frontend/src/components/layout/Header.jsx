@@ -1,35 +1,38 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { ShieldIcon, TruckIcon, ShopIcon } from '../common/Icon';
 
 /**
  * Global Top Navigation Header
+ * Features vector SICRA branding from official design assets and role switcher
  * @param {string} role - Current role ('admin' | 'col' | 'biz')
  * @param {function} setRole - Role setter function
+ * @param {function} onBrandClick - Optional click handler for returning to dashboard root
  */
-export function Header({ role = 'admin', setRole }) {
-  const [imgError, setImgError] = useState(false);
-
+export function Header({ role = 'admin', setRole, onBrandClick }) {
   return (
-    <header>
-      <div className="brand">
-        {!imgError ? (
-          <img
-            src="/assets/sicra_logo.jpeg"
-            alt="SICRA Logo"
-            className="brand-logo-img"
-            onError={() => setImgError(true)}
-          />
-        ) : (
-          <svg width="40" height="40" viewBox="0 0 48 48" aria-hidden="true">
-            <path d="M8 24a16 16 0 0 1 28-10.500" fill="none" stroke="#5D8054" strokeWidth="3.500" strokeLinecap="round" />
-            <path d="M40 24a16 16 0 0 1-28 10.500" fill="none" stroke="#5D8054" strokeWidth="3.500" strokeLinecap="round" />
-            <path d="M24 10s8 8.500 8 14a8 8 0 0 1-16 0c0-5.500 8-14 8-14z" fill="#998937" />
-            <circle cx="24" cy="27" r="2" fill="#F2F2F2" />
-          </svg>
-        )}
+    <header className="sicra-header">
+      <div
+        className="brand"
+        onClick={onBrandClick}
+        style={{ cursor: onBrandClick ? 'pointer' : 'default' }}
+        title="SICRA · Plataforma Oficial"
+      >
+        <img
+          src="/assets/sicra-isotype.svg"
+          alt="SICRA Isotipo"
+          className="brand-logo-svg"
+          style={{
+            width: '40px',
+            height: '40px',
+            display: 'block',
+            flexShrink: 0
+          }}
+        />
         <div>
           <b>SICRA</b>
-          <div className="sm mut" style={{ lineHeight: 1.2 }}>Control y recolección de aceite</div>
+          <div className="sm mut" style={{ lineHeight: 1.2 }}>
+            Control y recolección de aceite
+          </div>
         </div>
       </div>
 

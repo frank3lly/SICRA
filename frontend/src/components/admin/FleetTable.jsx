@@ -2,14 +2,14 @@ import React from 'react';
 import { Card, ProgressBar, Chip } from '../common';
 
 /**
- * Fleet Containers Table matching `.scroll table` in reference
+ * Fleet Containers Table with robust column sizing and overflow prevention
  * @param {Array<object>} containers - List of container records
  */
 export function FleetTable({ containers = [], className = '', ...props }) {
   return (
-    <Card className={className} {...props}>
+    <Card className={`fleet-table-card ${className}`.trim()} {...props}>
       <div className="row sp" style={{ marginBottom: '14px' }}>
-        <h2>Contenedores</h2>
+        <h2>Contenedores en Monitoreo</h2>
         <span className="sm mut">{containers.length} activos</span>
       </div>
       {containers.length === 0 ? (
@@ -30,10 +30,10 @@ export function FleetTable({ containers = [], className = '', ...props }) {
           <table>
             <thead>
               <tr>
-                <th>Comercio</th>
-                <th>Llenado</th>
-                <th>Batería</th>
-                <th>Estado</th>
+                <th style={{ minWidth: '180px' }}>Comercio</th>
+                <th style={{ minWidth: '150px' }}>Nivel de Llenado</th>
+                <th style={{ width: '80px', textAlign: 'center' }}>Batería IoT</th>
+                <th style={{ width: '110px', textAlign: 'right' }}>Estado</th>
               </tr>
             </thead>
             <tbody>
@@ -62,17 +62,21 @@ export function FleetTable({ containers = [], className = '', ...props }) {
 
                 return (
                   <tr key={container.id || container.business_name}>
-                    <td>{container.business_name}</td>
+                    <td className="business-name-cell">
+                      {container.business_name}
+                    </td>
                     <td>
                       <div className="row" style={{ flexWrap: 'nowrap', gap: '8px' }}>
                         <ProgressBar value={fillPct} />
-                        <span style={{ minWidth: '34px', textAlign: 'right' }}>
+                        <span style={{ minWidth: '34px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
                           {fillPct}%
                         </span>
                       </div>
                     </td>
-                    <td>{batteryPct}%</td>
-                    <td>
+                    <td style={{ textAlign: 'center', fontVariantNumeric: 'tabular-nums' }}>
+                      {batteryPct}%
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
                       <Chip variant={statusVariant}>{statusLabel}</Chip>
                     </td>
                   </tr>
