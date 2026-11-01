@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Card,
   Button,
@@ -9,9 +9,7 @@ import {
   BellIcon,
   DropIcon,
   CloudIcon,
-  TruckIcon,
-  ClockIcon,
-  ShieldIcon
+  ClockIcon
 } from '../common';
 import { runFleetForecast, fetchLatestPredictions } from '../../services/api';
 
@@ -22,7 +20,7 @@ const getBarColor = (pct) => {
 };
 
 /**
- * Dedicated Full-Page Forecast and Predictive Intelligence Center
+ * Dedicated Full-Page Forecast View
  * @param {function} onBack - Handler to return to the fleet overview
  * @param {Array<object>} initialProjections - Initial predictions from server
  */
@@ -119,43 +117,20 @@ export function ForecastCenter({ onBack, initialProjections = [] }) {
             disabled={isRecalculating}
             onClick={handleRecalculate}
           >
-            <span>{isRecalculating ? 'Recalculando con IA...' : 'Recalcular pronóstico ahora'}</span>
+            <span>{isRecalculating ? 'Calculando...' : 'Recalcular proyecciones'}</span>
           </Button>
         </div>
       </div>
 
-      {/* Hero Header */}
+      {/* Header */}
       <div className="forecast-header">
-        <h1>Centro de Inteligencia Predictiva</h1>
-        <p className="lead" style={{ margin: '8px 0 20px', maxWidth: '75ch' }}>
-          Modelado analítico de series temporales mediante GLM y Random Forest. Proyección volumétrica
-          anticipada para la prevención de desbordes y optimización de rutas según la <b>Ley 225-20</b>.
+        <h1>Proyecciones de Recolección</h1>
+        <p className="lead" style={{ margin: '8px 0 24px', maxWidth: '75ch' }}>
+          Estimación anticipada de volumen y niveles de llenado en 24 horas para optimizar las rutas de recogida.
         </p>
       </div>
 
-      {/* R-04 Quality & Model Compliance Banner */}
-      <div className="forecast-banner">
-        <div className="row" style={{ gap: '14px' }}>
-          <img
-            src="/assets/sicra-isotype.svg"
-            alt="SICRA AI"
-            style={{ width: '44px', height: '44px', flexShrink: 0 }}
-          />
-          <div>
-            <div style={{ fontWeight: 600, fontSize: '15px', color: 'var(--ink)' }}>
-              Motor de Inferencia de Flota Activo · GLM Regressor (Regla de Oro R-04)
-            </div>
-            <div className="sm mut" style={{ marginTop: '2px' }}>
-              MAE en prueba supera el error base del modelo Seasonal Naive. Calibrado con telemetría de 11 comercios piloto en San Pedro de Macorís.
-            </div>
-          </div>
-        </div>
-        <div>
-          <Chip variant="">R-04: SUPERADO 🟢</Chip>
-        </div>
-      </div>
-
-      {/* High-Impact KPI Grid */}
+      {/* KPI Grid */}
       <div className="forecast-kpi-grid">
         <StatWidget
           icon={<BellIcon style={{ color: overflowImminent.length > 0 ? 'var(--red)' : 'var(--yel)' }} />}
@@ -179,13 +154,13 @@ export function ForecastCenter({ onBack, initialProjections = [] }) {
         />
       </div>
 
-      {/* Main Interactive Forecast Visualizer Card */}
+      {/* Visualizer Card */}
       <Card style={{ marginBottom: '24px', padding: '28px' }}>
         <div className="row sp" style={{ marginBottom: '20px' }}>
           <div>
-            <h2>Visualizador Gráfico de Pronóstico</h2>
+            <h2>Pronóstico de la Flota</h2>
             <div className="sm mut">
-              Comparativa de llenado, tasas de vertido calculadas y umbral de alerta logística.
+              Comparativa de llenado actual frente al nivel proyectado en 24 horas.
             </div>
           </div>
 
@@ -196,7 +171,7 @@ export function ForecastCenter({ onBack, initialProjections = [] }) {
               onChange={(newMode) => setMode(newMode)}
               options={[
                 { value: 'p', label: 'Llenado en 24 h (%)' },
-                { value: 'l', label: 'Tasa Diaria (L)' },
+                { value: 'l', label: 'Volumen Diario (L)' },
                 { value: 'h', label: 'Horas al 80%' }
               ]}
             />
@@ -247,7 +222,7 @@ export function ForecastCenter({ onBack, initialProjections = [] }) {
               background: 'var(--nt)'
             }}
           >
-            No hay proyecciones almacenadas en el servidor. Presione "Recalcular pronóstico ahora" para ejecutar el modelo ML.
+            No hay proyecciones almacenadas en el servidor. Presione "Recalcular proyecciones" para generar el pronóstico.
           </div>
         ) : (
           <>
@@ -374,16 +349,16 @@ export function ForecastCenter({ onBack, initialProjections = [] }) {
         )}
       </Card>
 
-      {/* Predictive Dispatch Matrix */}
+      {/* Detail Table */}
       <Card style={{ padding: '28px' }}>
         <div className="row sp" style={{ marginBottom: '18px' }}>
           <div>
-            <h2>Matriz de Despacho Anticipado y Estado por Negocio</h2>
+            <h2>Detalle por Comercio</h2>
             <div className="sm mut">
-              Planificación operativa de retiros recomendados antes de alcanzar el umbral de desborde.
+              Estimación de llenado y horas restantes para planificar las visitas de recolección.
             </div>
           </div>
-          <span className="chip">11 Comercios Conectados</span>
+          <span className="chip">{sortedData.length} Comercios</span>
         </div>
 
         <div className="scroll">
@@ -391,9 +366,9 @@ export function ForecastCenter({ onBack, initialProjections = [] }) {
             <thead>
               <tr>
                 <th>Comercio</th>
-                <th>Capacidad y Llenado Actual</th>
+                <th>Capacidad y Nivel Actual</th>
                 <th>Proyección en 24 h</th>
-                <th>Tasa Predicha</th>
+                <th>Generación Diaria Est.</th>
                 <th>Horas hasta el 80%</th>
                 <th style={{ textAlign: 'right' }}>Prioridad de Recolección</th>
               </tr>
@@ -407,7 +382,6 @@ export function ForecastCenter({ onBack, initialProjections = [] }) {
                 const currentVol = item.currentVolumeLiters ?? Math.round((currentPct / 100) * (item.capacityLiters || 50));
                 const capacity = item.capacityLiters ?? 50;
 
-                // Priority determination
                 let priorityLabel = 'Normal';
                 let priorityVariant = '';
                 if (forecastPct >= 95 || hours === 0) {

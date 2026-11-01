@@ -3,7 +3,6 @@ import {
   StatWidget,
   Button,
   Card,
-  Chip,
   DropIcon,
   CloudIcon,
   TruckIcon,
@@ -21,7 +20,7 @@ import {
 } from '../../services/api';
 
 /**
- * Admin Fleet Overview and MLOps Supervision Cockpit
+ * Admin Fleet Overview
  * @param {function} onOpenForecast - Callback to open the full-page Forecast Center
  */
 export function AdminDashboard({ onOpenForecast }) {
@@ -170,7 +169,7 @@ export function AdminDashboard({ onOpenForecast }) {
         />
       </div>
 
-      {/* Spotlight Projections Feature Card */}
+      {/* Projections Spotlight Card */}
       <Card
         style={{
           marginBottom: '20px',
@@ -183,18 +182,15 @@ export function AdminDashboard({ onOpenForecast }) {
           <div className="row" style={{ gap: '16px', flex: 1, minWidth: '280px' }}>
             <img
               src="/assets/sicra-isotype.svg"
-              alt="SICRA AI"
+              alt="SICRA"
               style={{ width: '48px', height: '48px', flexShrink: 0 }}
             />
             <div>
-              <div className="row" style={{ gap: '8px', marginBottom: '4px' }}>
-                <h2 style={{ fontSize: '18px' }}>Centro de Inteligencia Predictiva</h2>
-                <Chip variant="w">Característica Principal</Chip>
-              </div>
+              <h2 style={{ fontSize: '18px', marginBottom: '4px' }}>Proyecciones de Recolección</h2>
               <p className="sm mut" style={{ maxWidth: '65ch', margin: 0 }}>
                 {criticalForecastCount > 0
-                  ? `Se detectaron ${criticalForecastCount} contenedores que superarán el umbral del 80% en las próximas 24 h. Acceda al análisis volumétrico completo para optimizar los despachos.`
-                  : 'Proyección de llenado y estimación de tasa de vertido diaria mediante regresión Poisson GLM (Regla R-04).'}
+                  ? `${criticalForecastCount} contenedores alcanzarán el 80% o más de llenado en las próximas 24 horas.`
+                  : 'Estimación de llenado para anticipar las visitas y optimizar rutas.'}
               </p>
             </div>
           </div>
@@ -204,7 +200,7 @@ export function AdminDashboard({ onOpenForecast }) {
               icon={<SparkIcon />}
               onClick={onOpenForecast}
             >
-              Abrir Centro Predictivo Completo
+              Ver proyecciones de flota
             </Button>
           </div>
         </div>
@@ -231,13 +227,13 @@ export function AdminDashboard({ onOpenForecast }) {
           </div>
           <div style={{ marginTop: '18px' }}>
             <Button onClick={onOpenForecast} icon={<SparkIcon />}>
-              Ver Proyecciones ML
+              Ver proyecciones
             </Button>
           </div>
         </Card>
       </div>
 
-      {/* Full-Width Fleet Table to accommodate long business names gracefully */}
+      {/* Full-Width Fleet Table */}
       <FleetTable containers={containers} />
     </section>
   );
