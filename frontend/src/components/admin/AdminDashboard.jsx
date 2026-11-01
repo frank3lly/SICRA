@@ -13,6 +13,7 @@ import {
 import { FleetTable } from './FleetTable';
 import { ComplianceCard } from './ComplianceCard';
 import { AddBusinessModal } from './AddBusinessModal';
+import { AddContainerModal } from './AddContainerModal';
 import {
   fetchEnvironmentalStats,
   fetchContainers,
@@ -32,10 +33,21 @@ export function AdminDashboard({ onOpenForecast }) {
   const [isCalculating, setIsCalculating] = useState(false);
   const [btnText, setBtnText] = useState('Correr Proyección');
   const [isAddBusinessOpen, setIsAddBusinessOpen] = useState(false);
+  const [isAddContainerOpen, setIsAddContainerOpen] = useState(false);
   const [successToast, setSuccessToast] = useState(null);
 
   const handleBusinessAdded = async (newBiz) => {
     setSuccessToast(`Comercio "${newBiz.name}" registrado exitosamente.`);
+    setTimeout(() => setSuccessToast(null), 4000);
+
+    const containerResult = await fetchContainers();
+    if (containerResult.connected && containerResult.containers) {
+      setContainers(containerResult.containers);
+    }
+  };
+
+  const handleContainerAdded = async (newContainer) => {
+    setSuccessToast(`Contenedor para "${newContainer.business_name}" aprovisionado exitosamente.`);
     setTimeout(() => setSuccessToast(null), 4000);
 
     const containerResult = await fetchContainers();
@@ -154,6 +166,9 @@ export function AdminDashboard({ onOpenForecast }) {
           </Button>
           <Button icon={<PlusIcon />} onClick={() => setIsAddBusinessOpen(true)}>
             Nuevo comercio
+          </Button>
+          <Button icon={<PlusIcon />} onClick={() => setIsAddContainerOpen(true)}>
+            Agregar contenedor
           </Button>
         </div>
       </div>
@@ -287,6 +302,13 @@ export function AdminDashboard({ onOpenForecast }) {
         isOpen={isAddBusinessOpen}
         onClose={() => setIsAddBusinessOpen(false)}
         onSuccess={handleBusinessAdded}
+      />
+
+      {/* Modal for provisioning container and generating ESP32 token */}
+      <AddContainerModal
+        isOpen={isAddContainerOpen}
+        onClose={() => setIsAddContainerOpen(false)}
+        onSuccess={handleContainerAdded}
       />
     </section>
   );

@@ -422,4 +422,50 @@ export async function createBusiness(payload) {
   return data;
 }
 
+/**
+ * Retrieve list of all registered business establishments
+ */
+export async function fetchBusinesses() {
+  const token = getAuthToken();
+  const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+  const res = await fetch(`${API_BASE}/api/v1/businesses/`, { headers });
+  if (!res.ok) {
+    throw new Error(`Error al consultar comercios: HTTP ${res.status}`);
+  }
+  return await res.json();
+}
+
+/**
+ * Provision new smart collection container and generate ESP32 device token
+ */
+export async function createContainer(payload) {
+  const token = getAuthToken();
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {})
+  };
+
+  const res = await fetch(`${API_BASE}/api/v1/containers/`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(payload)
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    let msg = 'Error al aprovisionar el contenedor';
+    if (data.detail) {
+      if (typeof data.detail === 'string') {
+        msg = data.detail;
+      } else if (Array.isArray(data.detail)) {
+        msg = data.detail.map((d) => d.msg || `${d.loc?.join('.')}: error`).join(', ');
+      }
+    }
+    throw new Error(msg);
+  }
+  return data;
+}
+
+
 

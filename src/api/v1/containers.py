@@ -1,14 +1,18 @@
 """Smart container hardware and calibration REST API endpoints for SICRA."""
 
+import secrets
 from typing import Any, Dict, List, Optional
+import uuid
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, Response, status
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from src.database.session import get_db
 from src.models.entities import Business, Container, Prediction, Telemetry, User
-from src.models.enums import TelemetryFlag, UserRole
+from src.models.enums import ContainerStatus, TelemetryFlag, UserRole
 from src.security.dependencies import (
     get_current_user,
+    require_role,
     verify_business_access,
 )
 
@@ -78,8 +82,77 @@ def list_containers(
     return results
 
 
+class ContainerCreatePayload(BaseModel):
+    """Payload for provisioning a new smart container for a business establishment."""
+
+    business_id: str = Field(..., description="UUID of existing business")
+    capacity_liters: float = Field(..., gt=0.0, le=1000.0, description="Nominal container volume in liters")
+    tare_weight_kg: float = Field(..., ge=0.0, le=100.0, description="Empty tare weight in kg")
+    oil_density_kg_l: float = Field(0.92, gt=0.5, le=1.5, description="Oil density conversion factor")
+
+
+@router.post(
+    "/",
+    status_code=status.HTTP_201_CREATED,
+    summary="Provision new container for a business (Admin only)",
+)
+def create_container(
+    payload: ContainerCreatePayload,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role(UserRole.ADMIN)),
+) -> Dict[str, Any]:
+    """Provision a new smart collection container and generate cryptographically secure device token."""
+    # 1. Verify business exists
+    business = db.query(Business).filter(Business.id == payload.business_id).first()
+    if not business:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Business '{payload.business_id}' not found",
+        )
+
+    # 2. Generate cryptographically secure unique IoT hardware token
+    device_token = f"sicra_live_tok_{secrets.token_hex(16)}"
+
+    # 3. Create Container record
+    new_container = Container(
+        id=str(uuid.uuid4()),
+        business_id=payload.business_id,
+        device_token=device_token,
+        capacity_liters=payload.capacity_liters,
+        tare_weight_kg=payload.tare_weight_kg,
+        oil_density_kg_l=payload.oil_density_kg_l,
+        status=ContainerStatus.ACTIVE,
+        current_volume_liters=0.0,
+        current_fill_percentage=0.0,
+    )
+    db.add(new_container)
+    db.commit()
+    db.refresh(new_container)
+
+    # 4. Return container details including plaintext device_token for firmware flashing
+    return {
+        "id": str(new_container.id),
+        "business_id": str(new_container.business_id),
+        "business_name": business.name,
+        "device_token": new_container.device_token,
+        "capacity_liters": new_container.capacity_liters,
+        "tare_weight_kg": new_container.tare_weight_kg,
+        "oil_density_kg_l": new_container.oil_density_kg_l,
+        "status": (
+            new_container.status.value
+            if hasattr(new_container.status, "value")
+            else str(new_container.status)
+        ),
+        "created_at": (
+            new_container.created_at.isoformat()
+            if new_container.created_at
+            else None
+        ),
+    }
+
+
 def _get_container_pickups(container_id: Any, db: Session, limit: int = 10) -> List[Dict[str, Any]]:
-    """Retrieve historical container emptying events confirming licensed oil collection under Ley 225-20."""
+    """Retrieve historical container emptying events confirming verified oil collection."""
     drains = (
         db.query(Telemetry)
         .filter(
@@ -241,7 +314,7 @@ def get_container_pickup_history(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> List[Dict[str, Any]]:
-    """Retrieve historical custody transfer events for a container under Ley 225-20."""
+    """Retrieve historical custody transfer events for a container."""
     container = db.query(Container).filter(Container.id == id).first()
     if not container:
         raise HTTPException(
