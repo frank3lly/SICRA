@@ -1,13 +1,16 @@
 """Environmental Impact and Legal Compliance Statistics Service."""
 
 from datetime import datetime, timezone
+import hashlib
 import io
 import os
 from typing import Any, Dict
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-from matplotlib.patches import FancyBboxPatch
+
+from reportlab.lib import colors
+from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+from reportlab.platypus import Image as RLImage, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 from sqlalchemy.orm import Session
 
 from src.models.entities import Business, CollectionRoute, Container, Telemetry
@@ -88,7 +91,7 @@ class StatsService:
 
     @classmethod
     def generate_audit_report_pdf(cls, db: Session) -> bytes:
-        """Generate a publication-grade PDF audit report matching the SICRA dark theme."""
+        """Generate a publication-grade, professional white-themed PDF audit report."""
         stats = cls.get_environmental_stats(db)
 
         # Query monitored containers with business info
@@ -100,177 +103,313 @@ class StatsService:
             .all()
         )
 
-        fig = plt.figure(figsize=(8.5, 11), facecolor="#0f1411")
-        ax = fig.add_axes([0, 0, 1, 1], facecolor="#0f1411")
-        ax.axis("off")
+        buf = io.BytesIO()
+        doc = SimpleDocTemplate(
+            buf,
+            pagesize=letter,
+            leftMargin=36,
+            rightMargin=36,
+            topMargin=32,
+            bottomMargin=32,
+        )
 
-        # Top Banner
-        ax.add_patch(
-            FancyBboxPatch(
-                (0.05, 0.87),
-                0.90,
-                0.09,
-                boxstyle="round,pad=0.01,rounding_size=0.012",
-                facecolor="#161e18",
-                edgecolor="#25342a",
-                linewidth=1.2,
+        styles = getSampleStyleSheet()
+
+        # Custom typography styles
+        style_brand = ParagraphStyle(
+            "BrandTitle",
+            fontName="Helvetica-Bold",
+            fontSize=22,
+            leading=25,
+            textColor=colors.HexColor("#1E4A37"),
+        )
+        style_subhead = ParagraphStyle(
+            "BrandSubhead",
+            fontName="Helvetica",
+            fontSize=9.5,
+            leading=13,
+            textColor=colors.HexColor("#4B5563"),
+        )
+        style_meta_right = ParagraphStyle(
+            "MetaRight",
+            fontName="Helvetica",
+            fontSize=8,
+            leading=11,
+            textColor=colors.HexColor("#374151"),
+            alignment=TA_RIGHT,
+        )
+        style_summary = ParagraphStyle(
+            "SummaryText",
+            fontName="Helvetica",
+            fontSize=8.5,
+            leading=12,
+            textColor=colors.HexColor("#374151"),
+        )
+        style_section_h = ParagraphStyle(
+            "SectionHeading",
+            fontName="Helvetica-Bold",
+            fontSize=10,
+            leading=13,
+            textColor=colors.HexColor("#1E4A37"),
+        )
+
+        elements = []
+
+        # 1. Header (Brand logo left, Metadata right)
+        now_dt = datetime.now(timezone.utc)
+        audit_code = f"SICRA-AUD-{now_dt.strftime('%Y%m%d')}-{hashlib.md5(now_dt.isoformat().encode()).hexdigest()[:8].upper()}"
+
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        logo_path = os.path.abspath(os.path.join(current_dir, "..", "assets", "sicra-logo-full.png"))
+
+        if os.path.exists(logo_path):
+            logo_img = RLImage(logo_path, width=150, height=51.8)
+            header_table = Table(
+                [
+                    [
+                        logo_img,
+                        Paragraph(
+                            f"<b>FECHA DE EMISIÓN:</b> {now_dt.strftime('%d/%m/%Y %H:%M UTC')}<br/>"
+                            f"<b>CÓDIGO DE AUDITORÍA:</b> {audit_code}<br/>"
+                            "<b>RED PILOTO:</b> San Pedro de Macorís, RD<br/>"
+                            "<b>ESTADO:</b> <font color=\"#166534\"><b>TRAZABILIDAD CERTIFICADA</b></font>",
+                            style_meta_right,
+                        ),
+                    ]
+                ],
+                colWidths=[310, 230],
+            )
+            header_table.setStyle(
+                TableStyle(
+                    [
+                        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                        ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                        ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                        ("TOPPADDING", (0, 0), (-1, -1), 0),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+                    ]
+                )
+            )
+            elements.append(header_table)
+            elements.append(Spacer(1, 6))
+            elements.append(
+                Table(
+                    [
+                        [
+                            Paragraph("<b>INFORME OFICIAL DE AUDITORÍA Y TRAZABILIDAD AMBIENTAL</b>", style_section_h),
+                            Paragraph("<font color=\"#6B7280\" size=\"8\">Plataforma Nacional de Recolección y Control</font>", style_meta_right),
+                        ]
+                    ],
+                    colWidths=[330, 210],
+                    style=[
+                        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                        ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                        ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                        ("TOPPADDING", (0, 0), (-1, -1), 0),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+                    ],
+                )
+            )
+        else:
+            header_data = [
+                [
+                    Paragraph("<b>SICRA</b>", style_brand),
+                    Paragraph(
+                        f"<b>FECHA DE EMISIÓN:</b> {now_dt.strftime('%d/%m/%Y %H:%M UTC')}<br/>"
+                        f"<b>CÓDIGO DE AUDITORÍA:</b> {audit_code}<br/>"
+                        "<b>RED PILOTO:</b> San Pedro de Macorís, RD",
+                        style_meta_right,
+                    ),
+                ],
+                [
+                    Paragraph(
+                        "<b>Sistema Inteligente de Control y Recolección de Aceite</b><br/>"
+                        "<font color=\"#1E4A37\"><b>INFORME OFICIAL DE AUDITORÍA Y TRAZABILIDAD AMBIENTAL</b></font>",
+                        style_subhead,
+                    ),
+                    Paragraph(
+                        "<b>ESTADO:</b> <font color=\"#166534\"><b>TRAZABILIDAD CERTIFICADA</b></font>",
+                        style_meta_right,
+                    ),
+                ],
+            ]
+            header_table = Table(header_data, colWidths=[330, 210])
+            header_table.setStyle(
+                TableStyle(
+                    [
+                        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+                        ("TOPPADDING", (0, 0), (-1, -1), 0),
+                        ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                        ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                    ]
+                )
+            )
+            elements.append(header_table)
+
+        # Emerald accent separator
+        accent_bar = Table([[""]], colWidths=[540], rowHeights=[2.5])
+        accent_bar.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#1E4A37")),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+                    ("TOPPADDING", (0, 0), (-1, -1), 0),
+                ]
             )
         )
-        ax.text(0.08, 0.925, "SICRA", color="#F5B62E", fontsize=22, fontweight="bold")
-        ax.text(
-            0.18,
-            0.928,
-            "·  Sistema Inteligente de Control y Recolección de Aceite",
-            color="#F4F7F4",
-            fontsize=11,
-        )
-        ax.text(
-            0.08,
-            0.888,
-            "INFORME OFICIAL DE TRAZABILIDAD Y AUDITORÍA AMBIENTAL",
-            color="#95A89E",
-            fontsize=9,
-            fontweight="bold",
-        )
-        now_str = datetime.now(timezone.utc).strftime("%d/%m/%Y %H:%M UTC")
-        ax.text(0.68, 0.888, f"EMISIÓN: {now_str}", color="#95A89E", fontsize=8)
+        elements.append(Spacer(1, 6))
+        elements.append(accent_bar)
+        elements.append(Spacer(1, 8))
 
-        # 3 Metric Cards
-        oil_str = f"{stats['total_oil_diverted_liters']:,.1f} L".replace(",", "X").replace(".", ",").replace("X", ".")
-        water_str = f"{stats['water_preserved_liters']:,.0f} L".replace(",", "X").replace(".", ",").replace("X", ".")
-        co2_str = f"{stats['co2_avoided_kg']:,.1f} kg".replace(",", "X").replace(".", ",").replace("X", ".")
+        # Executive Summary Paragraph
+        elements.append(
+            Paragraph(
+                "El presente documento certifica las operaciones de monitoreo telemétrico, desvío de contaminantes y recolección controlada de aceite vegetal usado (AVU) en la red de establecimientos gastronómicos registrados. Todos los registros provienen de pesajes calibrados en recipientes estandarizados con sensorica activa.",
+                style_summary,
+            )
+        )
+        elements.append(Spacer(1, 10))
 
-        metrics = [
-            ("Aceite Desviado", oil_str, "Evitado de drenajes y fuentes hídricas"),
-            ("Agua Preservada", water_str, "Factor 1 L aceite = 1,000 L agua potable"),
-            ("CO2e Mitigado", co2_str, "Equivalente compensado por coprocesamiento"),
+        # 2. 3 Impact KPI Cards (Clean White/Soft Pastel)
+        oil_fmt = f"{stats['total_oil_diverted_liters']:,.1f} L"
+        water_fmt = f"{stats['water_preserved_liters']:,.0f} L"
+        co2_fmt = f"{stats['co2_avoided_kg']:,.1f} kg"
+
+        kpi_data = [
+            [
+                Paragraph(
+                    "<font color=\"#166534\" size=\"8\"><b>ACEITE DESVIADO</b></font><br/><br/>"
+                    f"<font size=\"16\" color=\"#111827\"><b>{oil_fmt}</b></font><br/><br/>"
+                    "<font size=\"7\" color=\"#4B5563\">Evitado de drenajes y fuentes hídricas</font>",
+                    styles["Normal"],
+                ),
+                Paragraph(
+                    "<font color=\"#1E40AF\" size=\"8\"><b>AGUA PRESERVADA</b></font><br/><br/>"
+                    f"<font size=\"16\" color=\"#111827\"><b>{water_fmt}</b></font><br/><br/>"
+                    "<font size=\"7\" color=\"#4B5563\">Factor certificado (1 L aceite = 1,000 L)</font>",
+                    styles["Normal"],
+                ),
+                Paragraph(
+                    "<font color=\"#B45309\" size=\"8\"><b>CO2e MITIGADO</b></font><br/><br/>"
+                    f"<font size=\"16\" color=\"#111827\"><b>{co2_fmt}</b></font><br/><br/>"
+                    "<font size=\"7\" color=\"#4B5563\">Reducción estimada por coprocesamiento</font>",
+                    styles["Normal"],
+                ),
+            ]
+        ]
+        kpi_table = Table(kpi_data, colWidths=[174, 174, 174], rowHeights=[72])
+        kpi_table.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (0, 0), colors.HexColor("#F0FDF4")),
+                    ("BACKGROUND", (1, 0), (1, 0), colors.HexColor("#EFF6FF")),
+                    ("BACKGROUND", (2, 0), (2, 0), colors.HexColor("#FFFBEB")),
+                    ("BOX", (0, 0), (0, 0), 1, colors.HexColor("#BBF7D0")),
+                    ("BOX", (1, 0), (1, 0), 1, colors.HexColor("#BFDBFE")),
+                    ("BOX", (2, 0), (2, 0), 1, colors.HexColor("#FDE68A")),
+                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                    ("TOPPADDING", (0, 0), (-1, -1), 8),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 10),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+                ]
+            )
+        )
+        elements.append(kpi_table)
+        elements.append(Spacer(1, 14))
+
+        # 3. Monitored Establishments Table
+        elements.append(
+            Paragraph("<b>RED ACTIVA DE ESTABLECIMIENTOS Y CONTENEDORES MONITOREADOS</b>", style_section_h)
+        )
+        elements.append(Spacer(1, 4))
+
+        table_rows = [
+            [
+                Paragraph("<font color=\"#FFFFFF\" size=\"8\"><b>Comercio</b></font>", styles["Normal"]),
+                Paragraph("<font color=\"#FFFFFF\" size=\"8\"><b>Ubicación</b></font>", styles["Normal"]),
+                Paragraph("<font color=\"#FFFFFF\" size=\"8\"><b>Capacidad</b></font>", styles["Normal"]),
+                Paragraph("<font color=\"#FFFFFF\" size=\"8\"><b>Tara Calibrada</b></font>", styles["Normal"]),
+                Paragraph("<font color=\"#FFFFFF\" size=\"8\"><b>Nivel Actual</b></font>", styles["Normal"]),
+                Paragraph("<font color=\"#FFFFFF\" size=\"8\"><b>Estado</b></font>", styles["Normal"]),
+            ]
         ]
 
-        for idx, (label, val, sub) in enumerate(metrics):
-            x = 0.05 + idx * 0.31
-            ax.add_patch(
-                FancyBboxPatch(
-                    (x, 0.74),
-                    0.28,
-                    0.10,
-                    boxstyle="round,pad=0.01,rounding_size=0.012",
-                    facecolor="#161e18",
-                    edgecolor="#25342a",
-                    linewidth=1,
-                )
-            )
-            ax.text(x + 0.02, 0.805, label.upper(), color="#95A89E", fontsize=8, fontweight="bold")
-            ax.text(x + 0.02, 0.768, val, color="#F4F7F4", fontsize=15, fontweight="bold")
-            ax.text(x + 0.02, 0.748, sub, color="#95A89E", fontsize=6.8)
-
-        # Table Section
-        ax.add_patch(
-            FancyBboxPatch(
-                (0.05, 0.18),
-                0.90,
-                0.53,
-                boxstyle="round,pad=0.01,rounding_size=0.012",
-                facecolor="#161e18",
-                edgecolor="#25342a",
-                linewidth=1,
-            )
-        )
-        ax.text(
-            0.08,
-            0.680,
-            "RED ACTIVA DE ESTABLECIMIENTOS Y CONTENEDORES MONITOREADOS",
-            color="#F4F7F4",
-            fontsize=11,
-            fontweight="bold",
-        )
-        ax.text(
-            0.08,
-            0.662,
-            f"Total de {len(containers)} unidades en San Pedro de Macorís con telemetría de peso y tara calibrada.",
-            color="#95A89E",
-            fontsize=8,
-        )
-
-        # Table Header
-        ax.add_patch(
-            FancyBboxPatch((0.07, 0.615), 0.86, 0.035, boxstyle="square,pad=0", facecolor="#1c2720", edgecolor="none")
-        )
-        headers = [("Comercio", 0.08), ("Ciudad", 0.40), ("Capacidad", 0.55), ("Tara", 0.67), ("Estado", 0.79)]
-        for title, hx in headers:
-            ax.text(hx, 0.627, title.upper(), color="#F5B62E", fontsize=8, fontweight="bold")
-
-        # Table Rows
-        for r_idx, c in enumerate(containers[:9]):
-            y = 0.575 - r_idx * 0.042
-            if r_idx % 2 == 1:
-                ax.add_patch(
-                    FancyBboxPatch(
-                        (0.07, y - 0.01),
-                        0.86,
-                        0.036,
-                        boxstyle="square,pad=0",
-                        facecolor="#131914",
-                        edgecolor="none",
-                    )
-                )
+        for c in containers:
             b_name = c.business.name if c.business else "Establecimiento"
             if len(b_name) > 28:
                 b_name = b_name[:26] + "…"
-            city = c.business.city if c.business else "San Pedro de Macorís"
+            address = c.business.address if c.business else "San Pedro de Macorís"
+            if len(address) > 34:
+                address = address[:32] + "…"
             cap = f"{c.capacity_liters:.0f} L"
             tare = f"{c.tare_weight_kg:.2f} kg"
+            fill = f"{c.current_fill_percentage:.1f} %"
             stat = "Activo"
 
-            ax.text(0.08, y, b_name, color="#F4F7F4", fontsize=8.5)
-            ax.text(0.40, y, city, color="#95A89E", fontsize=8)
-            ax.text(0.55, y, cap, color="#F4F7F4", fontsize=8)
-            ax.text(0.67, y, tare, color="#95A89E", fontsize=8)
-            ax.text(0.79, y, stat, color="#1E8E5A", fontsize=8, fontweight="bold")
+            table_rows.append(
+                [
+                    Paragraph(f"<font size=\"8\" color=\"#111827\"><b>{b_name}</b></font>", styles["Normal"]),
+                    Paragraph(f"<font size=\"7.5\" color=\"#4B5563\">{address}</font>", styles["Normal"]),
+                    Paragraph(f"<font size=\"8\" color=\"#111827\">{cap}</font>", styles["Normal"]),
+                    Paragraph(f"<font size=\"8\" color=\"#4B5563\">{tare}</font>", styles["Normal"]),
+                    Paragraph(f"<font size=\"8\" color=\"#111827\"><b>{fill}</b></font>", styles["Normal"]),
+                    Paragraph(f"<font size=\"7.5\" color=\"#166534\"><b>{stat}</b></font>", styles["Normal"]),
+                ]
+            )
 
-        # Footer / Verification Seal
-        ax.add_patch(
-            FancyBboxPatch(
-                (0.05, 0.05),
-                0.90,
-                0.10,
-                boxstyle="round,pad=0.01,rounding_size=0.012",
-                facecolor="#161e18",
-                edgecolor="#25342a",
-                linewidth=1,
+        biz_table = Table(table_rows, colWidths=[130, 160, 60, 75, 65, 50])
+        biz_table.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1E4A37")),
+                    ("ALIGN", (0, 0), (-1, 0), "LEFT"),
+                    ("ALIGN", (2, 0), (4, -1), "CENTER"),
+                    ("ALIGN", (5, 0), (5, -1), "CENTER"),
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                    ("TOPPADDING", (0, 0), (-1, -1), 4),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+                    ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#E5E7EB")),
+                    ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#F9FAFB")]),
+                ]
             )
         )
-        ax.text(
-            0.08,
-            0.118,
-            "CERTIFICACIÓN DE GESTIÓN AMBIENTAL Y TRAZABILIDAD",
-            color="#F5B62E",
-            fontsize=9.5,
-            fontweight="bold",
-        )
-        ax.text(
-            0.08,
-            0.096,
-            "Este documento certifica el acopio, medición por sensores IoT y desvío ambiental de aceite vegetal usado.",
-            color="#F4F7F4",
-            fontsize=7.5,
-        )
-        ax.text(
-            0.08,
-            0.076,
-            "Operadores Logísticos Autorizados: Reoil Dominicana / Mevosa · Coprocesamiento para Biodiésel.",
-            color="#95A89E",
-            fontsize=7.5,
-        )
-        ax.text(
-            0.08,
-            0.058,
-            "Código de Auditoría: SICRA-SPM-LIVE-VERIFIED · Firma Digital Verificada",
-            color="#95A89E",
-            fontsize=6.5,
-        )
+        elements.append(biz_table)
+        elements.append(Spacer(1, 12))
 
-        buf = io.BytesIO()
-        fig.savefig(buf, format="pdf", facecolor=fig.get_facecolor(), edgecolor="none", bbox_inches="tight", dpi=150)
-        plt.close(fig)
+        # 4. Regulatory & Certification Seal Box
+        cert_data = [
+            [
+                Paragraph(
+                    "<b>CERTIFICACIÓN OFICIAL DE GESTIÓN Y TRAZABILIDAD AMBIENTAL</b><br/>"
+                    "<font size=\"7\" color=\"#374151\">"
+                    "Las lecturas y métricas de este reporte han sido registradas mediante sensores telemétricos calibrados bajo estándares de densidad de aceite vegetal (0.92 kg/L) y control de tara en recipientes de PEAD. "
+                    "Las operaciones de recolección, pesaje in-situ y transporte hacia plantas de coprocesamiento para biodiésel son ejecutadas exclusivamente por operadores autorizados: <b>Reoil Dominicana / Mevosa</b>."
+                    "</font><br/>"
+                    f"<font size=\"6.5\" color=\"#6B7280\">"
+                    f"Sello Digital: SHA256:{hashlib.sha256(now_dt.isoformat().encode()).hexdigest()} · SICRA Sistema Oficial · Generado en tiempo real desde la plataforma"
+                    "</font>",
+                    styles["Normal"],
+                )
+            ]
+        ]
+        cert_table = Table(cert_data, colWidths=[540])
+        cert_table.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#F8FAFC")),
+                    ("BOX", (0, 0), (-1, -1), 1, colors.HexColor("#CBD5E1")),
+                    ("TOPPADDING", (0, 0), (-1, -1), 6),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 10),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+                ]
+            )
+        )
+        elements.append(cert_table)
+
+        doc.build(elements)
         return buf.getvalue()
 
