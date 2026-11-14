@@ -25,13 +25,13 @@ DEFAULT_SEED_FILE = os.path.join(
 
 # Admin users as required by the specification
 SYSTEM_ADMINS = [
-    {"email": "czorrilla@sicra.do", "full_name": "Carlos Zorrilla"},
-    {"email": "dcaraballo@sicra.do", "full_name": "Daniel Caraballo"},
-    {"email": "yrodriguez@sicra.do", "full_name": "Yomaira Rodriguez"},
-    {"email": "fcharles@sicra.do", "full_name": "Frank Charles"},
-    {"email": "amontero@sicra.do", "full_name": "Alexander Montero"},
-    {"email": "jburgos@sicra.do", "full_name": "Jose Burgos"},
-    {"email": "mcarrasco@sicra.do", "full_name": "Manuel Carrasco"},
+    {"email": "czorrilla@sicra.do", "full_name": "Carlos Manuel Zorrilla"},
+    {"email": "dcaraballo@sicra.do", "full_name": "Dahiana Caraballo"},
+    {"email": "yrodriguez@sicra.do", "full_name": "Yamilet Adames Rodríguez"},
+    {"email": "fcharles@sicra.do", "full_name": "Félix Charles"},
+    {"email": "amontero@sicra.do", "full_name": "Anlly Lucia Montero"},
+    {"email": "jburgos@sicra.do", "full_name": "Johalfry Ciceron Burgos"},
+    {"email": "mcarrasco@sicra.do", "full_name": "Marian Olanlly Ortiz Carrasco"},
     {"email": "admin@sicra.do", "full_name": "Administrador General"},
 ]
 
@@ -91,6 +91,8 @@ def seed_database(
         for admin in SYSTEM_ADMINS:
             existing = session.query(User).filter(User.email == admin["email"]).first()
             if existing:
+                if existing.full_name != admin["full_name"]:
+                    existing.full_name = admin["full_name"]
                 stats["users_skipped"] += 1
             else:
                 user = User(
@@ -232,6 +234,23 @@ def seed_database(
         raise
     finally:
         session.close()
+
+
+def sync_admin_user_names(session: Session) -> int:
+    """Synchronize system administrator full names in the database.
+
+    Returns:
+        int: Number of administrator records updated.
+    """
+    updated_count = 0
+    for admin in SYSTEM_ADMINS:
+        user = session.query(User).filter(User.email == admin["email"]).first()
+        if user and user.full_name != admin["full_name"]:
+            user.full_name = admin["full_name"]
+            updated_count += 1
+    if updated_count > 0:
+        session.commit()
+    return updated_count
 
 
 def main() -> None:

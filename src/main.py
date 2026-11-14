@@ -39,13 +39,20 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # 2. Check if database is unpopulated and AUTO_SEED_IF_EMPTY is enabled
     auto_seed = os.getenv("AUTO_SEED_IF_EMPTY", "false").lower() in ("true", "1", "yes")
-    if auto_seed:
-        with get_db_context() as db:
+    with get_db_context() as db:
+        if auto_seed:
             biz_count = db.query(Business).count()
             if biz_count == 0:
                 logger.info("Empty database detected with AUTO_SEED_IF_EMPTY=true. Executing pilot seed...")
                 seed_database(target_engine=db.get_bind(), quiet=True)
                 logger.info("Database auto-seeding completed.")
+        try:
+            from src.database.seed import sync_admin_user_names
+            updated = sync_admin_user_names(db)
+            if updated > 0:
+                logger.info(f"Synchronized {updated} administrator user names.")
+        except Exception as e:
+            logger.warning(f"Could not synchronize admin names: {e}")
 
     # 3. Warm up Stage 200 ML Inference Engine in a background thread
     def _warmup_ml() -> None:
