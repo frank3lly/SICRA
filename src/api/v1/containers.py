@@ -367,3 +367,113 @@ def get_container_detail(
             else None
         ),
     }
+
+
+class ContainerUpdatePayload(BaseModel):
+    """Payload for updating an existing smart container hardware configuration (Admin only)."""
+
+    capacity_liters: Optional[float] = Field(None, gt=0.0, le=1000.0)
+    tare_weight_kg: Optional[float] = Field(None, ge=0.0, le=100.0)
+    oil_density_kg_l: Optional[float] = Field(None, gt=0.5, le=1.5)
+    status: Optional[ContainerStatus] = None
+    business_id: Optional[str] = None
+
+
+@router.put(
+    "/{id}",
+    summary="Update smart container calibration or assignment (Admin only)",
+)
+def update_container(
+    id: str,
+    payload: ContainerUpdatePayload,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role(UserRole.ADMIN)),
+) -> Dict[str, Any]:
+    """Modify tare weight, volume capacity, oil density or operational status of a smart container."""
+    container = db.query(Container).filter(Container.id == id).first()
+    if not container:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Contenedor '{id}' no encontrado.",
+        )
+
+    # 1. Validate business if reassigning
+    if payload.business_id is not None:
+        biz = db.query(Business).filter(Business.id == payload.business_id).first()
+        if not biz:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"El comercio '{payload.business_id}' no existe.",
+            )
+        container.business_id = payload.business_id
+
+    # 2. Update physical calibration parameters
+    if payload.capacity_liters is not None:
+        container.capacity_liters = payload.capacity_liters
+    if payload.tare_weight_kg is not None:
+        container.tare_weight_kg = payload.tare_weight_kg
+    if payload.oil_density_kg_l is not None:
+        container.oil_density_kg_l = payload.oil_density_kg_l
+    if payload.status is not None:
+        container.status = payload.status
+
+    # Recalculate fill percentage if capacity changed
+    if container.capacity_liters > 0 and container.current_volume_liters is not None:
+        container.current_fill_percentage = min(
+            100.0, round((container.current_volume_liters / container.capacity_liters) * 100.0, 1)
+        )
+
+    db.commit()
+    db.refresh(container)
+
+    business = db.query(Business).filter(Business.id == container.business_id).first()
+
+    return {
+        "id": str(container.id),
+        "business_id": str(container.business_id),
+        "business_name": business.name if business else None,
+        "device_token": container.device_token,
+        "capacity_liters": container.capacity_liters,
+        "tare_weight_kg": container.tare_weight_kg,
+        "oil_density_kg_l": container.oil_density_kg_l,
+        "status": (
+            container.status.value
+            if hasattr(container.status, "value")
+            else str(container.status)
+        ),
+        "current_volume_liters": container.current_volume_liters,
+        "current_fill_percentage": container.current_fill_percentage,
+        "last_telemetry_at": (
+            container.last_telemetry_at.isoformat()
+            if container.last_telemetry_at
+            else None
+        ),
+    }
+
+
+@router.delete(
+    "/{id}",
+    summary="Delete smart container and its telemetry logs (Admin only)",
+)
+def delete_container(
+    id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role(UserRole.ADMIN)),
+) -> Dict[str, Any]:
+    """Permanently delete a smart container and all associated measurements."""
+    container = db.query(Container).filter(Container.id == id).first()
+    if not container:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Contenedor '{id}' no encontrado.",
+        )
+
+    # Clean up associated predictions, alerts, and telemetries
+    db.delete(container)
+    db.commit()
+
+    return {
+        "status": "deleted",
+        "id": id,
+        "message": f"Contenedor '{id}' eliminado exitosamente.",
+    }

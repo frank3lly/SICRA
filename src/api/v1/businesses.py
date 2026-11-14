@@ -184,3 +184,118 @@ def create_business(
         ),
         "is_active": new_biz.is_active,
     }
+
+
+class BusinessUpdatePayload(BaseModel):
+    """Payload for modifying an existing business establishment (Admin only)."""
+
+    name: Optional[str] = Field(None, max_length=150)
+    business_type: Optional[BusinessType] = None
+    num_fryers: Optional[int] = Field(None, ge=1)
+    avg_daily_customers: Optional[int] = Field(None, ge=0)
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    address: Optional[str] = Field(None, max_length=255)
+    city: Optional[str] = Field(None, max_length=100)
+    contact_name: Optional[str] = Field(None, max_length=120)
+    phone: Optional[str] = Field(None, max_length=30)
+    is_active: Optional[bool] = None
+
+
+@router.put(
+    "/{id}",
+    summary="Update business establishment (Admin only)",
+)
+def update_business(
+    id: str,
+    payload: BusinessUpdatePayload,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role(UserRole.ADMIN)),
+) -> Dict[str, Any]:
+    """Modify parameters, contact info, or operational status of a business establishment."""
+    business = db.query(Business).filter(Business.id == id).first()
+    if not business:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Comercio '{id}' no encontrado.",
+        )
+
+    if payload.name is not None:
+        business.name = payload.name.strip()
+    if payload.business_type is not None:
+        business.business_type = payload.business_type
+    if payload.num_fryers is not None:
+        business.num_fryers = payload.num_fryers
+    if payload.avg_daily_customers is not None:
+        business.avg_daily_customers = payload.avg_daily_customers
+    if payload.latitude is not None:
+        business.latitude = payload.latitude
+    if payload.longitude is not None:
+        business.longitude = payload.longitude
+    if payload.address is not None:
+        business.address = payload.address.strip()
+    if payload.city is not None:
+        business.city = payload.city.strip()
+    if payload.contact_name is not None:
+        business.contact_name = payload.contact_name.strip() if payload.contact_name else None
+    if payload.phone is not None:
+        business.phone = payload.phone.strip() if payload.phone else None
+    if payload.is_active is not None:
+        business.is_active = payload.is_active
+
+    db.commit()
+    db.refresh(business)
+
+    return {
+        "id": str(business.id),
+        "name": business.name,
+        "business_type": (
+            business.business_type.value
+            if hasattr(business.business_type, "value")
+            else str(business.business_type)
+        ),
+        "num_fryers": business.num_fryers,
+        "avg_daily_customers": business.avg_daily_customers,
+        "latitude": business.latitude,
+        "longitude": business.longitude,
+        "address": business.address,
+        "city": business.city,
+        "contact_name": business.contact_name,
+        "phone": business.phone,
+        "is_active": business.is_active,
+        "containers_count": len(business.containers),
+    }
+
+
+@router.delete(
+    "/{id}",
+    summary="Delete business establishment and cascade dependencies (Admin only)",
+)
+def delete_business(
+    id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role(UserRole.ADMIN)),
+) -> Dict[str, Any]:
+    """Delete a business establishment, its containers, and unbind associated user accounts."""
+    business = db.query(Business).filter(Business.id == id).first()
+    if not business:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Comercio '{id}' no encontrado.",
+        )
+
+    # 1. Unbind any users associated with this business
+    users_bound = db.query(User).filter(User.business_id == id).all()
+    for u in users_bound:
+        u.business_id = None
+
+    # 2. Delete business (cascading containers, telemetries, predictions, alerts)
+    biz_name = business.name
+    db.delete(business)
+    db.commit()
+
+    return {
+        "status": "deleted",
+        "id": id,
+        "message": f"Comercio '{biz_name}' y sus recursos asociados han sido eliminados.",
+    }

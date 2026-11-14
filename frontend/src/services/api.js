@@ -523,6 +523,207 @@ export async function fetchUsers({ role = '', search = '' } = {}) {
 }
 
 /**
+ * Update an existing business establishment (Admin only)
+ */
+export async function updateBusiness(id, payload) {
+  const token = getAuthToken();
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {})
+  };
+
+  const res = await fetch(`${API_BASE}/api/v1/businesses/${id}`, {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify(payload)
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    let msg = 'Error al actualizar el comercio';
+    if (data?.detail) {
+      if (typeof data.detail === 'string') {
+        msg = data.detail;
+      } else if (Array.isArray(data.detail)) {
+        msg = data.detail.map((d) => d.msg || `${d.loc?.join('.')}: error`).join(', ');
+      }
+    }
+    throw new Error(msg);
+  }
+  return data;
+}
+
+/**
+ * Delete a business establishment (Admin only)
+ */
+export async function deleteBusiness(id) {
+  const token = getAuthToken();
+  const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+  const res = await fetch(`${API_BASE}/api/v1/businesses/${id}`, {
+    method: 'DELETE',
+    headers
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    let msg = 'Error al eliminar el comercio';
+    if (data?.detail) {
+      if (typeof data.detail === 'string') {
+        msg = data.detail;
+      } else if (Array.isArray(data.detail)) {
+        msg = data.detail.map((d) => d.msg || `${d.loc?.join('.')}: error`).join(', ');
+      }
+    }
+    throw new Error(msg);
+  }
+  return data;
+}
+
+/**
+ * Update container calibration or operational parameters (Admin only)
+ */
+export async function updateContainer(id, payload) {
+  const token = getAuthToken();
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {})
+  };
+
+  const res = await fetch(`${API_BASE}/api/v1/containers/${id}`, {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify(payload)
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    let msg = 'Error al actualizar el contenedor';
+    if (data?.detail) {
+      if (typeof data.detail === 'string') {
+        msg = data.detail;
+      } else if (Array.isArray(data.detail)) {
+        msg = data.detail.map((d) => d.msg || `${d.loc?.join('.')}: error`).join(', ');
+      }
+    }
+    throw new Error(msg);
+  }
+  return data;
+}
+
+/**
+ * Delete a container (Admin only)
+ */
+export async function deleteContainer(id) {
+  const token = getAuthToken();
+  const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+  const res = await fetch(`${API_BASE}/api/v1/containers/${id}`, {
+    method: 'DELETE',
+    headers
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    let msg = 'Error al eliminar el contenedor';
+    if (data?.detail) {
+      if (typeof data.detail === 'string') {
+        msg = data.detail;
+      } else if (Array.isArray(data.detail)) {
+        msg = data.detail.map((d) => d.msg || `${d.loc?.join('.')}: error`).join(', ');
+      }
+    }
+    throw new Error(msg);
+  }
+  return data;
+}
+
+/**
+ * Update a user account (Admin only)
+ */
+export async function updateUser(id, payload) {
+  const token = getAuthToken();
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {})
+  };
+
+  const res = await fetch(`${API_BASE}/api/v1/users/${id}`, {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify(payload)
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    let msg = 'Error al actualizar el usuario';
+    if (data?.detail) {
+      if (typeof data.detail === 'string') {
+        msg = data.detail;
+      } else if (Array.isArray(data.detail)) {
+        msg = data.detail.map((d) => d.msg || `${d.loc?.join('.')}: error`).join(', ');
+      }
+    }
+    throw new Error(msg);
+  }
+  return data;
+}
+
+/**
+ * Delete a user account (Admin only)
+ */
+export async function deleteUser(id) {
+  const token = getAuthToken();
+  const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+  const res = await fetch(`${API_BASE}/api/v1/users/${id}`, {
+    method: 'DELETE',
+    headers
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    let msg = 'Error al eliminar el usuario';
+    if (data?.detail) {
+      if (typeof data.detail === 'string') {
+        msg = data.detail;
+      } else if (Array.isArray(data.detail)) {
+        msg = data.detail.map((d) => d.msg || `${d.loc?.join('.')}: error`).join(', ');
+      }
+    }
+    throw new Error(msg);
+  }
+  return data;
+}
+
+/**
+ * Permanently delete an operational alert (Admin only)
+ */
+export async function deleteAlert(id) {
+  const token = getAuthToken();
+  const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+  const res = await fetch(`${API_BASE}/api/v1/alerts/${id}`, {
+    method: 'DELETE',
+    headers
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    let msg = 'Error al eliminar la alerta';
+    if (data?.detail) {
+      if (typeof data.detail === 'string') {
+        msg = data.detail;
+      } else if (Array.isArray(data.detail)) {
+        msg = data.detail.map((d) => d.msg || `${d.loc?.join('.')}: error`).join(', ');
+      }
+    }
+    throw new Error(msg);
+  }
+  return data;
+}
+
+/**
  * Download publication-grade environmental audit report PDF matching page theme
  */
 export async function downloadAuditReportPdf() {

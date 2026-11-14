@@ -150,3 +150,157 @@ def list_users(
             }
         )
     return results
+
+
+class UserUpdatePayload(BaseModel):
+    """Payload for updating an existing platform user (Admin only)."""
+
+    full_name: Optional[str] = Field(None, min_length=2, max_length=150)
+    email: Optional[str] = Field(None, max_length=150, pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+    password: Optional[str] = Field(None, min_length=8)
+    role: Optional[UserRole] = None
+    business_id: Optional[str] = None
+    is_active: Optional[bool] = None
+
+
+@router.get(
+    "/{id}",
+    summary="Get user detail by ID (Admin only)",
+)
+def get_user_detail(
+    id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role(UserRole.ADMIN)),
+) -> Dict[str, Any]:
+    """Retrieve detailed profile of a user by UUID."""
+    user = db.query(User).filter(User.id == id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Usuario '{id}' no encontrado.",
+        )
+
+    return {
+        "id": str(user.id),
+        "email": user.email,
+        "full_name": user.full_name,
+        "role": user.role.value if hasattr(user.role, "value") else str(user.role),
+        "business_id": str(user.business_id) if user.business_id else None,
+        "business_name": user.business.name if user.business else None,
+        "is_active": user.is_active,
+        "created_at": user.created_at.isoformat() if user.created_at else None,
+    }
+
+
+@router.put(
+    "/{id}",
+    summary="Update platform user (Admin only)",
+)
+def update_user(
+    id: str,
+    payload: UserUpdatePayload,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role(UserRole.ADMIN)),
+) -> Dict[str, Any]:
+    """Update profile, role, status or password of an existing user."""
+    user = db.query(User).filter(User.id == id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Usuario '{id}' no encontrado.",
+        )
+
+    # 1. Email uniqueness check if changed
+    if payload.email is not None:
+        normalized_email = payload.email.lower().strip()
+        if normalized_email != user.email:
+            existing = db.query(User).filter(User.email == normalized_email, User.id != id).first()
+            if existing:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"El correo '{normalized_email}' ya está registrado por otro usuario.",
+                )
+            user.email = normalized_email
+
+    # 2. Update full name if given
+    if payload.full_name is not None:
+        user.full_name = payload.full_name.strip()
+
+    # 3. Update active status if given
+    if payload.is_active is not None:
+        # Prevent admin from deactivating self
+        if str(current_user.id) == str(id) and not payload.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No puedes desactivar tu propia cuenta de administrador.",
+            )
+        user.is_active = payload.is_active
+
+    # 4. Role and Business binding
+    target_role = payload.role if payload.role is not None else user.role
+    if target_role == UserRole.BUSINESS_OWNER:
+        target_biz_id = payload.business_id if payload.business_id is not None else user.business_id
+        if not target_biz_id:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Se requiere asignar un comercio ('business_id') para usuarios con rol 'BUSINESS_OWNER'.",
+            )
+        biz = db.query(Business).filter(Business.id == target_biz_id).first()
+        if not biz:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="El comercio especificado no existe.",
+            )
+        user.business_id = target_biz_id
+    elif payload.role is not None and payload.role != UserRole.BUSINESS_OWNER:
+        user.business_id = None
+
+    if payload.role is not None:
+        user.role = payload.role
+
+    # 5. Optional Password reset
+    if payload.password is not None and payload.password.strip():
+        user.hashed_password = hash_password(payload.password)
+
+    db.commit()
+    db.refresh(user)
+
+    return {
+        "id": str(user.id),
+        "email": user.email,
+        "full_name": user.full_name,
+        "role": user.role.value if hasattr(user.role, "value") else str(user.role),
+        "business_id": str(user.business_id) if user.business_id else None,
+        "business_name": user.business.name if user.business else None,
+        "is_active": user.is_active,
+        "created_at": user.created_at.isoformat() if user.created_at else None,
+    }
+
+
+@router.delete(
+    "/{id}",
+    summary="Delete platform user (Admin only)",
+)
+def delete_user(
+    id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role(UserRole.ADMIN)),
+) -> Dict[str, Any]:
+    """Permanently delete a platform user account."""
+    if str(current_user.id) == str(id):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No puedes eliminar tu propia cuenta de administrador en uso.",
+        )
+
+    user = db.query(User).filter(User.id == id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Usuario '{id}' no encontrado.",
+        )
+
+    db.delete(user)
+    db.commit()
+
+    return {"status": "deleted", "id": id, "message": f"Usuario '{user.full_name}' eliminado exitosamente."}

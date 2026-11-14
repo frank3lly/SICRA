@@ -7,7 +7,13 @@ const PAGE_SIZE = 11;
  * Fleet Containers Table with Searchbar and 11-Item Pagination
  * @param {Array<object>} containers - List of container records
  */
-export function FleetTable({ containers = [], className = '', ...props }) {
+export function FleetTable({
+  containers = [],
+  onEdit,
+  onDelete,
+  className = '',
+  ...props
+}) {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -104,13 +110,16 @@ export function FleetTable({ containers = [], className = '', ...props }) {
                 <th style={{ minWidth: '180px' }}>Comercio</th>
                 <th style={{ minWidth: '150px' }}>Nivel de Llenado</th>
                 <th style={{ width: '80px', textAlign: 'center' }}>Batería IoT</th>
-                <th style={{ width: '110px', textAlign: 'right' }}>Estado</th>
+                <th style={{ width: '100px', textAlign: 'center' }}>Estado</th>
+                {(onEdit || onDelete) && (
+                  <th style={{ width: '130px', textAlign: 'right' }}>Acciones</th>
+                )}
               </tr>
             </thead>
             <tbody>
               {paginatedContainers.length === 0 ? (
                 <tr>
-                  <td colSpan="4" style={{ textAlign: 'center', padding: '36px', color: 'var(--mut)' }}>
+                  <td colSpan={(onEdit || onDelete) ? 5 : 4} style={{ textAlign: 'center', padding: '36px', color: 'var(--mut)' }}>
                     No se encontraron comercios que coincidan con "{searchQuery}".
                   </td>
                 </tr>
@@ -154,9 +163,40 @@ export function FleetTable({ containers = [], className = '', ...props }) {
                       <td style={{ textAlign: 'center', fontVariantNumeric: 'tabular-nums' }}>
                         {batteryPct}%
                       </td>
-                      <td style={{ textAlign: 'right' }}>
+                      <td style={{ textAlign: 'center' }}>
                         <Chip variant={statusVariant}>{statusLabel}</Chip>
                       </td>
+                      {(onEdit || onDelete) && (
+                        <td style={{ textAlign: 'right' }}>
+                          <div className="row" style={{ gap: '6px', justifyContent: 'flex-end' }}>
+                            {onEdit && (
+                              <button
+                                type="button"
+                                className="pagination-btn"
+                                style={{ padding: '4px 10px', fontSize: '12px' }}
+                                onClick={() => onEdit(container)}
+                              >
+                                Editar
+                              </button>
+                            )}
+                            {onDelete && (
+                              <button
+                                type="button"
+                                className="pagination-btn"
+                                style={{
+                                  padding: '4px 10px',
+                                  fontSize: '12px',
+                                  color: 'var(--red, #b91c1c)',
+                                  borderColor: 'color-mix(in srgb, var(--red, #b91c1c) 30%, transparent)'
+                                }}
+                                onClick={() => onDelete(container)}
+                              >
+                                Eliminar
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   );
                 })

@@ -9,59 +9,105 @@ import {
   BellIcon,
   SparkIcon,
   PlusIcon,
-  CheckIcon
+  CheckIcon,
+  SegmentedControl
 } from '../common';
 import { FleetTable } from './FleetTable';
+import { BusinessesTable } from './BusinessesTable';
+import { UsersTable } from './UsersTable';
 import { ComplianceCard } from './ComplianceCard';
 import { AddBusinessModal } from './AddBusinessModal';
+import { EditBusinessModal } from './EditBusinessModal';
 import { AddContainerModal } from './AddContainerModal';
+import { EditContainerModal } from './EditContainerModal';
 import { CreateUserModal } from './CreateUserModal';
+import { EditUserModal } from './EditUserModal';
+import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 import {
   fetchEnvironmentalStats,
   fetchContainers,
+  fetchBusinesses,
+  fetchUsers,
   fetchLatestPredictions,
-  runFleetForecast
+  runFleetForecast,
+  deleteBusiness,
+  deleteContainer,
+  deleteUser
 } from '../../services/api';
 
 /**
- * Admin Fleet Overview
+ * Admin Fleet Overview and Administrative Entity Management
  * @param {function} onOpenForecast - Callback to open the full-page Forecast Center
  */
 export function AdminDashboard({ onOpenForecast }) {
   const [stats, setStats] = useState(null);
   const [containers, setContainers] = useState([]);
+  const [businesses, setBusinesses] = useState([]);
+  const [users, setUsers] = useState([]);
   const [projections, setProjections] = useState([]);
+  const [activeTab, setActiveTab] = useState('containers');
+
   const [serverConnected, setServerConnected] = useState(true);
   const [isCalculating, setIsCalculating] = useState(false);
   const [btnText, setBtnText] = useState('Correr Proyección');
+
+  // Modals for Creating
   const [isAddBusinessOpen, setIsAddBusinessOpen] = useState(false);
   const [isAddContainerOpen, setIsAddContainerOpen] = useState(false);
   const [isCreateUserOpen, setIsCreateUserOpen] = useState(false);
+
+  // Modals for Editing
+  const [editingBusiness, setEditingBusiness] = useState(null);
+  const [editingContainer, setEditingContainer] = useState(null);
+  const [editingUser, setEditingUser] = useState(null);
+
+  // Modal for Deleting
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const [successToast, setSuccessToast] = useState(null);
 
-  const handleUserCreated = (newUser) => {
+  const reloadContainers = async () => {
+    const containerResult = await fetchContainers();
+    if (containerResult.connected && containerResult.containers) {
+      setContainers(containerResult.containers);
+    }
+  };
+
+  const reloadBusinesses = async () => {
+    try {
+      const data = await fetchBusinesses();
+      if (Array.isArray(data)) {
+        setBusinesses(data);
+      }
+    } catch (e) {}
+  };
+
+  const reloadUsers = async () => {
+    try {
+      const data = await fetchUsers();
+      if (Array.isArray(data)) {
+        setUsers(data);
+      }
+    } catch (e) {}
+  };
+
+  const handleUserCreated = async (newUser) => {
     setSuccessToast(`Usuario "${newUser.full_name}" (${newUser.role}) creado exitosamente.`);
     setTimeout(() => setSuccessToast(null), 4000);
+    await reloadUsers();
   };
 
   const handleBusinessAdded = async (newBiz) => {
     setSuccessToast(`Comercio "${newBiz.name}" registrado exitosamente.`);
     setTimeout(() => setSuccessToast(null), 4000);
-
-    const containerResult = await fetchContainers();
-    if (containerResult.connected && containerResult.containers) {
-      setContainers(containerResult.containers);
-    }
+    await Promise.all([reloadBusinesses(), reloadContainers()]);
   };
 
   const handleContainerAdded = async (newContainer) => {
     setSuccessToast(`Contenedor para "${newContainer.business_name}" aprovisionado exitosamente.`);
     setTimeout(() => setSuccessToast(null), 4000);
-
-    const containerResult = await fetchContainers();
-    if (containerResult.connected && containerResult.containers) {
-      setContainers(containerResult.containers);
-    }
+    await reloadContainers();
   };
 
   // Load live data on mount
@@ -69,19 +115,23 @@ export function AdminDashboard({ onOpenForecast }) {
     let mounted = true;
 
     async function loadData() {
-      const [envResult, containerResult, predResult] = await Promise.all([
-        fetchEnvironmentalStats(),
-        fetchContainers(),
-        fetchLatestPredictions()
+      const [envResult, containerResult, predResult, bizResult, usersResult] = await Promise.all([
+        fetchEnvironmentalStats().catch(() => ({ connected: false })),
+        fetchContainers().catch(() => ({ connected: false, containers: [] })),
+        fetchLatestPredictions().catch(() => ({ projections: [] })),
+        fetchBusinesses().catch(() => []),
+        fetchUsers().catch(() => [])
       ]);
 
       if (mounted) {
-        const isConn = envResult.connected && containerResult.connected;
+        const isConn = Boolean(envResult?.connected && containerResult?.connected);
         setServerConnected(isConn);
         setStats(envResult);
-        setContainers(containerResult.containers || []);
+        setContainers(containerResult?.containers || []);
+        if (Array.isArray(bizResult)) setBusinesses(bizResult);
+        if (Array.isArray(usersResult)) setUsers(usersResult);
 
-        if (predResult.projections && predResult.projections.length > 0) {
+        if (predResult?.projections && predResult.projections.length > 0) {
           setProjections(predResult.projections);
           setBtnText('Actualizar proyección');
         }
@@ -110,6 +160,32 @@ export function AdminDashboard({ onOpenForecast }) {
       setBtnText('Reintentar proyección');
     } finally {
       setIsCalculating(false);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+    try {
+      if (deleteTarget.type === 'business') {
+        await deleteBusiness(deleteTarget.id);
+        setSuccessToast(`Comercio "${deleteTarget.name}" eliminado correctamente.`);
+        await Promise.all([reloadBusinesses(), reloadContainers()]);
+      } else if (deleteTarget.type === 'container') {
+        await deleteContainer(deleteTarget.id);
+        setSuccessToast('Contenedor eliminado correctamente.');
+        await reloadContainers();
+      } else if (deleteTarget.type === 'user') {
+        await deleteUser(deleteTarget.id);
+        setSuccessToast(`Usuario "${deleteTarget.name}" eliminado correctamente.`);
+        await reloadUsers();
+      }
+      setDeleteTarget(null);
+    } catch (err) {
+      alert(err.message || 'Error al eliminar el registro.');
+    } finally {
+      setIsDeleting(false);
+      setTimeout(() => setSuccessToast(null), 4000);
     }
   };
 
@@ -159,7 +235,7 @@ export function AdminDashboard({ onOpenForecast }) {
         <div>
           <h1>Panorama de la flota</h1>
           <div className="sm mut" style={{ marginTop: '4px' }}>
-            Estado operativo: {containers.length} contenedores en servicio
+            Estado operativo: {containers.length} contenedores · {businesses.length} comercios · {users.length} usuarios
           </div>
         </div>
         <div className="row" style={{ gap: '10px' }}>
@@ -315,14 +391,97 @@ export function AdminDashboard({ onOpenForecast }) {
         </Card>
       </div>
 
-      {/* Full-Width Fleet Table */}
-      <FleetTable containers={containers} />
+      {/* Segmented Control for Entity Tables */}
+      <div className="row sp" style={{ margin: '32px 0 16px', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+        <SegmentedControl
+          options={[
+            { value: 'containers', label: `Contenedores (${containers.length})` },
+            { value: 'businesses', label: `Comercios (${businesses.length})` },
+            { value: 'users', label: `Usuarios (${users.length})` }
+          ]}
+          value={activeTab}
+          onChange={setActiveTab}
+        />
+
+        <div className="row" style={{ gap: '8px' }}>
+          {activeTab === 'containers' && (
+            <Button icon={<PlusIcon />} onClick={() => setIsAddContainerOpen(true)}>
+              Agregar contenedor
+            </Button>
+          )}
+          {activeTab === 'businesses' && (
+            <Button icon={<PlusIcon />} onClick={() => setIsAddBusinessOpen(true)}>
+              Nuevo comercio
+            </Button>
+          )}
+          {activeTab === 'users' && (
+            <Button icon={<PlusIcon />} onClick={() => setIsCreateUserOpen(true)}>
+              Crear usuario
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Active Table Rendering */}
+      {activeTab === 'containers' && (
+        <FleetTable
+          containers={containers}
+          onEdit={(c) => setEditingContainer(c)}
+          onDelete={(c) =>
+            setDeleteTarget({
+              type: 'container',
+              id: c.id,
+              name: `Contenedor ${c.business_name || c.id?.slice(0, 8)}`
+            })
+          }
+        />
+      )}
+
+      {activeTab === 'businesses' && (
+        <BusinessesTable
+          businesses={businesses}
+          onEdit={(b) => setEditingBusiness(b)}
+          onDelete={(b) =>
+            setDeleteTarget({
+              type: 'business',
+              id: b.id,
+              name: b.name
+            })
+          }
+        />
+      )}
+
+      {activeTab === 'users' && (
+        <UsersTable
+          users={users}
+          onEdit={(u) => setEditingUser(u)}
+          onDelete={(u) =>
+            setDeleteTarget({
+              type: 'user',
+              id: u.id,
+              name: `${u.full_name} (${u.email})`
+            })
+          }
+        />
+      )}
 
       {/* Modal for adding new business */}
       <AddBusinessModal
         isOpen={isAddBusinessOpen}
         onClose={() => setIsAddBusinessOpen(false)}
         onSuccess={handleBusinessAdded}
+      />
+
+      {/* Modal for editing existing business */}
+      <EditBusinessModal
+        isOpen={Boolean(editingBusiness)}
+        business={editingBusiness}
+        onClose={() => setEditingBusiness(null)}
+        onSuccess={async (updatedBiz) => {
+          setSuccessToast(`Comercio "${updatedBiz.name}" actualizado exitosamente.`);
+          setTimeout(() => setSuccessToast(null), 4000);
+          await Promise.all([reloadBusinesses(), reloadContainers()]);
+        }}
       />
 
       {/* Modal for provisioning container and generating ESP32 token */}
@@ -332,11 +491,51 @@ export function AdminDashboard({ onOpenForecast }) {
         onSuccess={handleContainerAdded}
       />
 
+      {/* Modal for editing existing container */}
+      <EditContainerModal
+        isOpen={Boolean(editingContainer)}
+        container={editingContainer}
+        onClose={() => setEditingContainer(null)}
+        onSuccess={async () => {
+          setSuccessToast('Contenedor actualizado exitosamente.');
+          setTimeout(() => setSuccessToast(null), 4000);
+          await reloadContainers();
+        }}
+      />
+
       {/* Modal for creating and provisioning users */}
       <CreateUserModal
         isOpen={isCreateUserOpen}
         onClose={() => setIsCreateUserOpen(false)}
         onSuccess={handleUserCreated}
+      />
+
+      {/* Modal for editing existing user */}
+      <EditUserModal
+        isOpen={Boolean(editingUser)}
+        user={editingUser}
+        onClose={() => setEditingUser(null)}
+        onSuccess={async (updatedUser) => {
+          setSuccessToast(`Usuario "${updatedUser.full_name}" actualizado exitosamente.`);
+          setTimeout(() => setSuccessToast(null), 4000);
+          await reloadUsers();
+        }}
+      />
+
+      {/* Modal for confirming deletions */}
+      <ConfirmDeleteModal
+        isOpen={Boolean(deleteTarget)}
+        title={
+          deleteTarget?.type === 'business'
+            ? 'Eliminar comercio'
+            : deleteTarget?.type === 'container'
+            ? 'Eliminar contenedor'
+            : 'Eliminar usuario'
+        }
+        itemName={deleteTarget?.name}
+        loading={isDeleting}
+        onConfirm={handleConfirmDelete}
+        onClose={() => !isDeleting && setDeleteTarget(null)}
       />
     </section>
   );

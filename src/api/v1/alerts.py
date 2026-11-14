@@ -49,3 +49,28 @@ def resolve_alert(
         "is_resolved": alert.is_resolved,
         "resolved_at": alert.resolved_at.isoformat() if alert.resolved_at else None,
     }
+
+
+@router.delete(
+    "/{id}",
+    summary="Delete operational alert (Admin only)",
+)
+def delete_alert(
+    id: str = Path(..., description="UUID of the operational alert"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role(UserRole.ADMIN)),
+) -> Dict[str, Any]:
+    """Permanently delete an operational alert record."""
+    from src.models.entities import Alert
+
+    alert = db.query(Alert).filter(Alert.id == id).first()
+    if not alert:
+        from fastapi import HTTPException
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Alerta '{id}' no encontrada.",
+        )
+
+    db.delete(alert)
+    db.commit()
+    return {"status": "deleted", "id": id, "message": "Alerta eliminada exitosamente."}
